@@ -1,3 +1,9 @@
+> And some say it's still using desktop computers, even to this day 👻
+
+![phantom screenshot](https://cancel.fm/static/phantom_images/phantom_1x_demo.png)
+
+[More screenshots](https://github.com/randrew/phantomstyle/wiki/Comparison-Screenshots)
+
 # Phantom Style
 
 Phantom is a QStyle for Qt which began as an overhaul of QFusionStyle. Similar
@@ -5,6 +11,8 @@ to Fusion, it's designed to be a looks-the-same cross-platform style. It looks
 native to nobody, but familiar to many. It has the visual appearance of a
 traditional GUI, and does not adopt a "modern flat" style. Compared to Fusion,
 it has many fixes, objective improvements, and subjective improvements:
+
+## Changes from QFusionStyle
 
 * Fixed many code and logic errors: unaligned reads/writes, dead and
   unreachable code paths, redundant allocations, unused variables.
