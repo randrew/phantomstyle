@@ -74,9 +74,9 @@ it has many fixes, objective improvements, and subjective improvements:
     produce unintuitive results. While your gradient that you chose and tested
     with a light color scheme might appear fine, when used with a QPalette with
     darker colors, the results may have far too little or too much contrast.
-    Hue shifting and unintended darkening or lightening will also likely occur.
+    Hue shifting and unintended darkening or lightening also may occur.
 
-  * QPainter has no dithering capabilities, so banding would frequently occur.
+  * QPainter has no dithering capabilities, so banding would occur.
 
   * QPainter's gradients and alpha blending are slow.
 
@@ -96,27 +96,26 @@ it has many fixes, objective improvements, and subjective improvements:
 
 * Changed derived color calculations to use CIELUV-like colorspace
 
-    * QColor's .darker() and .lighter() were frequently used by QFusionStyle to
-      calculate derived colors from another color. For example, outlines on a
-      box, or highlights on the inside of edges. QColor's .darker(),
-      .lighter(), .lightness(), and other functions have no rigor or defined
-      meaning -- the numbers are arbitrary and the output is unpredictable
-      except when the input color is similar to whatever the programmer or
-      designer tested it with. Using .lighter(120) on a near-black color will
-      produce a wildly different amount of contrast than .lighter(120) on a
-      lighter color.
+    * QColor's .darker() and .lighter() were used by QFusionStyle to calculate
+      derived colors from another color. For example, outlines on a box, or
+      highlights on the inside of edges. QColor's .darker(), .lighter(),
+      .lightness(), and other functions have no rigor or defined meaning -- the
+      numbers are arbitrary and the output is unpredictable except when the
+      input color is similar to whatever the programmer or designer tested it
+      with. Using .lighter(120) on a near-black color will produce a different
+      amount of contrast than .lighter(120) on a brighter color.
 
     * PhantomStyle instead uses a pseudo-CIELUV colorspace to derive its
       colors, provided by some core code from the hsluv-c library. While not
       perfect, it's a significant improvement, and allows PhantomStyle to more
-      consistent work with both light and dark QPalettes.
+      consistently work with both light and dark QPalettes.
 
 * Removed many implicit QPen and QBrush allocations caused by calling
   setBrush() and setPen() with QColor arguments. Instead, QPen and QBrush
   instances are now persisted in a small cache (in small flat array, not a
   QHash) that uses an accurate QPalette hash key calculation.
   (QPalette::cacheKey() is not used, because it is prone to changing even when
-  the underlying values are exactly the same.) This saves many, many small heap
+  the underlying values are the same.) This saves many, many small heap
   allocations that would occur when QFusionStyle was performing painting
   operations.
 
@@ -124,13 +123,12 @@ it has many fixes, objective improvements, and subjective improvements:
 
   * Though there are not many uses of animations in QtWidgets, they could cause
     problems. For example, dragging a QToolBar from its location in a
-    QMainWindow to another location would attempt to animated the layout
-    changes in the UI. But for moderately complicated UIs in a large window,
-    this would be too slow to re-layout and repaint in realtime, and the UI
-    would freeze up during the time it should have been animating. This could
-    cause the drop zone detection to give incorrect results, and then the UI
-    would be both stuttering spastically *and* freezing during the drag
-    operation.
+    QMainWindow to another location would attempt to animate the layout changes
+    in the UI. But for complicated UIs in a large window, this would be too
+    slow to re-layout and repaint in realtime, and the UI would freeze up
+    during the time it should have been animating. This could cause the drop
+    zone detection to give incorrect results, and then the UI would both
+    stutter spastically *and* repeatedly freeze up during the drag operation.
 
 * Disabled and removed most mouse-over/hover repainting.
 
@@ -140,10 +138,11 @@ it has many fixes, objective improvements, and subjective improvements:
     hardware-accelerated mouse drawing that skips the main compositing path,
     this would cause the repainting of widgets to appear to occur long after
     the mouse had already passed over the widget. The result would be a subtle
-    and persistent feeling of lag throughout in the UI. For many widgets,
-    QFusionStyle's alternate painting in the mouseover state was either not
-    noticeable or identical, resulting in redundant repainting and event
-    dispatching as the user moved their mouse cursor across the UI.
+    and persistent feeling of lag throughout in the UI.
+    
+  * For some widgets, QFusionStyle's alternate painting in the mouseover state
+    was either not noticeable or identical, resulting in redundant repainting
+    and event dispatching as the user moved their mouse cursor across the UI.
 
   * `Qt::WA_Hover` and alternate painting is still used where it makes good
     sense: menu items, tool buttons, and a few other cases.
@@ -219,10 +218,30 @@ with MSVC (tested with 2017), GCC and clang.
 
 ## License
 
-LGPL 2.0.
+LGPL 2.1.
 
 ## TODO
 
 * Screenshots
 
 * Probably lots of bugs
+
+```
+Phantom Style
+Copyright (C) 2019 Andrew Richards
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public
+License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+
+You should have received a copy of the GNU Library General Public
+License along with this library; if not, write to the
+Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+Boston, MA  02110-1301, USA.
+```
