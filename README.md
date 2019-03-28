@@ -170,7 +170,7 @@ it has many fixes, objective improvements, and subjective improvements:
     bars (`SH_MenuBar_AltKeyNavigation`) but did not actually draw the focused
     or highlighted menu bar item after the user had tapped the alt key. This
     would cause Windows and Linux users to assume that alt key navigation did
-    work in the program (because it had no visible indication that alt key
+    not work in the program (because it had no visible indication that alt key
     navigation mode had been entered) when in fact it actually did have an
     effect, and would also cause the subsequent keypress on the keyboard to be
     eaten by the QMenuBar.
