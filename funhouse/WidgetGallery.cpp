@@ -51,8 +51,8 @@
 #include "WidgetGallery.h"
 #include "phantomstyle.h"
 #include <QCommonStyle>
-#include <QtWidgets>
 #include <QToolButton>
+#include <QtWidgets>
 
 //! [0]
 WidgetGallery::WidgetGallery(QWidget* parent) : QWidget(parent) {
@@ -167,18 +167,20 @@ void WidgetGallery::createTopLeftGroupBox()
 
   radioButton1 = new QRadioButton(tr("Radio button 1"));
   radioButton2 = new QRadioButton(tr("Radio button 2"));
-  radioButton3 = new QRadioButton(tr("Radio button 3"));
   radioButton1->setChecked(true);
 
   checkBox = new QCheckBox(tr("Tri-state check box"));
   checkBox->setTristate(true);
   checkBox->setCheckState(Qt::PartiallyChecked);
 
+  auto cb1 = new QCheckBox(tr("Check box"));
+  cb1->setChecked(true);
+
   QVBoxLayout* layout = new QVBoxLayout;
   layout->addWidget(radioButton1);
   layout->addWidget(radioButton2);
-  layout->addWidget(radioButton3);
   layout->addWidget(checkBox);
+  layout->addWidget(cb1);
   layout->addStretch(1);
   topLeftGroupBox->setLayout(layout);
 }
@@ -269,13 +271,21 @@ void WidgetGallery::createBottomRightGroupBox() {
   auto toolButton = new QToolButton;
   toolButton->setText("Tool Button");
 
-  auto withMenu = new QToolButton;
-  auto menu = new QMenu(withMenu);
-  menu->setTitle("Menu Tool");
-  menu->addAction("One");
-  menu->addAction("Two");
-  withMenu->setDefaultAction(menu->menuAction());
-  withMenu->setPopupMode(QToolButton::InstantPopup);
+  auto autoRaiseToolButton = new QToolButton;
+  autoRaiseToolButton->setText("Auto Raise");
+  autoRaiseToolButton->setAutoRaise(true);
+
+  QStyleOption opt;
+  opt.initFrom(this);
+  auto withIcon = new QToolButton;
+  withIcon->setIcon(
+      style()->standardIcon(QStyle::SP_ComputerIcon, &opt, this));
+
+  auto hbox = new QHBoxLayout;
+  hbox->addWidget(toolButton);
+  hbox->addWidget(autoRaiseToolButton);
+  hbox->addWidget(withIcon);
+  hbox->addStretch(1);
 
   QGridLayout* layout = new QGridLayout;
   layout->addWidget(lineEdit, 0, 0, 1, 2);
@@ -283,10 +293,10 @@ void WidgetGallery::createBottomRightGroupBox() {
   layout->addWidget(spinBox, 2, 0, 1, 2);
   layout->addWidget(dateTimeEdit, 3, 0, 1, 2);
   layout->addWidget(slider, 4, 0);
-  layout->addWidget(toolButton, 5, 0);
   // layout->addWidget(dial, 4, 1, 2, 1);
-  layout->addWidget(withMenu, 5, 1);
+  layout->addLayout(hbox, 5, 0, 1, 3);
   layout->setRowStretch(6, 1);
+
   // layout->setContentsMargins(0, 0, 0, 0);
   // bottomRightGroupBox->setFlat(true);
   bottomRightGroupBox->setLayout(layout);
