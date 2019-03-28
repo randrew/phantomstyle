@@ -1,6 +1,8 @@
 > And some say it's still using desktop computers, even to this day 👻
 
-![phantom screenshot](https://cancel.fm/static/phantom_images/phantom_1x_demo.png)
+![phantom screenshot light](https://cancel.fm/static/phantom_images/phantom_1x_demo.png)
+
+![phantom screenshot dark](https://cancel.fm/static/phantom_images/phantom_1x_demo_dark.png)
 
 [More screenshots](https://github.com/randrew/phantomstyle/wiki/Comparison-Screenshots)
 
