@@ -1,0 +1,7 @@
+BasedOnStyle: LLVM
+BreakStringLiterals: false
+Cpp11BracedListStyle: true
+MaxEmptyLinesToKeep: 8
+PointerAlignment: Left
+ReflowComments: false
+Standard: Cpp11

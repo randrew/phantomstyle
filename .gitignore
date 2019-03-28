@@ -1,0 +1,54 @@
+# C++ objects and libs
+*.slo
+*.lo
+*.o
+*.a
+*.la
+*.lai
+*.so
+*.dll
+*.dylib
+
+# Qt-es
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+debug/
+release/
+build/
+
+# QtCreator
+*.autosave
+
+# QtCtreator Qml
+*.qmlproject.user
+*.qmlproject.user.*
+
+# QtCtreator CMake
+CMakeLists.txt.user
+
+# Translations
+*.qm
+
+# Documentation
+docs
+
+# CLion stuff
+.idea/*
+!.idea/runConfigurations
+!.idea/inspectionProfiles
+
+# MACOS stuff
+.DS_Store
+
+# easy_profiler, if present. Typically copied from out-of-tree.
+thirdparty/easy_profiler
