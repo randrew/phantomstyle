@@ -219,7 +219,7 @@ with MSVC (tested with 2017), GCC and clang.
 
 ## License
 
-LGPL 2.0.
+LGPL 2.1.
 
 ## TODO
 
