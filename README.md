@@ -220,9 +220,21 @@ with MSVC (tested with 2017), GCC and clang.
 
 LGPL 2.1.
 
+I would prefer to give it a more permissive license, or the same license that
+the official code Qt has, which allows commercial projects to use the code
+without LGPL restrictions if they have a Qt license. However, I don't know how
+to do this, and I don't have time at the moment to figure it out. Please
+contact me or open a ticket if you can help with this. The PhantomStyle code
+originally started as a copy-and-paste of the Fusion code, but nearly none of
+the Fusion code remains at this point (just some stuff for drawing MDI window
+decorations and QDial.)
+
 ## TODO
 
 * Screenshots
+
+* Several things haven't been fully tested (MDI windows, tick marks on sliders,
+  a few more I can't think of.)
 
 * Probably lots of bugs
 
