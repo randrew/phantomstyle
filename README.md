@@ -239,6 +239,9 @@ decorations and QDial.)
 * Several things haven't been fully tested (MDI windows, tick marks on sliders,
   a few more I can't think of.)
 
+* Several widgets draw arrow indicators with the wrong size (tool buttons with
+  non-immediate popup mode)
+
 * Probably lots of bugs
 
 ```
