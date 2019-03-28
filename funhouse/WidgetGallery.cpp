@@ -52,6 +52,7 @@
 #include "phantomstyle.h"
 #include <QCommonStyle>
 #include <QtWidgets>
+#include <QToolButton>
 
 //! [0]
 WidgetGallery::WidgetGallery(QWidget* parent) : QWidget(parent) {
@@ -64,13 +65,13 @@ WidgetGallery::WidgetGallery(QWidget* parent) : QWidget(parent) {
   // custom font useful for testing font issues in combo box
   // styleComboBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
-  styleLabel = new QLabel(tr("&Style:"));
+  styleLabel = new QLabel(tr("Style:"));
   styleLabel->setBuddy(styleComboBox);
 
-  useStylePaletteCheckBox = new QCheckBox(tr("&Use style's standard palette"));
+  useStylePaletteCheckBox = new QCheckBox(tr("Use style's standard palette"));
   useStylePaletteCheckBox->setChecked(false);
 
-  disableWidgetsCheckBox = new QCheckBox(tr("&Disable widgets"));
+  disableWidgetsCheckBox = new QCheckBox(tr("Disable widgets"));
 
   createTopLeftGroupBox();
   createTopRightGroupBox();
@@ -191,18 +192,18 @@ void WidgetGallery::createTopRightGroupBox() {
   defaultPushButton = new QPushButton(tr("Default Push Button"));
   defaultPushButton->setDefault(true);
 
+  flatPushButton = new QPushButton(tr("Flat Push Button"));
+  flatPushButton->setFlat(true);
+
   togglePushButton = new QPushButton(tr("Toggle Push Button"));
   togglePushButton->setCheckable(true);
   togglePushButton->setChecked(true);
 
-  flatPushButton = new QPushButton(tr("Flat Push Button"));
-  flatPushButton->setFlat(true);
-
   QVBoxLayout* layout = new QVBoxLayout;
   layout->addWidget(normalPushButton);
   layout->addWidget(defaultPushButton);
-  layout->addWidget(togglePushButton);
   layout->addWidget(flatPushButton);
+  layout->addWidget(togglePushButton);
   layout->addStretch(1);
   topRightGroupBox->setLayout(layout);
 }
@@ -237,8 +238,8 @@ void WidgetGallery::createBottomLeftTabWidget() {
   tab2hbox->addWidget(textEdit);
   tab2->setLayout(tab2hbox);
 
-  bottomLeftTabWidget->addTab(tab1, tr("&Table"));
-  bottomLeftTabWidget->addTab(tab2, tr("Text &Edit"));
+  bottomLeftTabWidget->addTab(tab1, tr("Table"));
+  bottomLeftTabWidget->addTab(tab2, tr("Text Edit"));
 }
 
 void WidgetGallery::createBottomRightGroupBox() {
@@ -261,12 +262,20 @@ void WidgetGallery::createBottomRightGroupBox() {
   slider = new QSlider(Qt::Horizontal, bottomRightGroupBox);
   slider->setValue(40);
 
-  scrollBar = new QScrollBar(Qt::Horizontal, bottomRightGroupBox);
-  scrollBar->setValue(60);
+  // dial = new QDial;
+  // dial->setValue(30);
+  // dial->setNotchesVisible(true);
 
-  dial = new QDial(bottomRightGroupBox);
-  dial->setValue(30);
-  dial->setNotchesVisible(true);
+  auto toolButton = new QToolButton;
+  toolButton->setText("Tool Button");
+
+  auto withMenu = new QToolButton;
+  auto menu = new QMenu(withMenu);
+  menu->setTitle("Menu Tool");
+  menu->addAction("One");
+  menu->addAction("Two");
+  withMenu->setDefaultAction(menu->menuAction());
+  withMenu->setPopupMode(QToolButton::InstantPopup);
 
   QGridLayout* layout = new QGridLayout;
   layout->addWidget(lineEdit, 0, 0, 1, 2);
@@ -274,8 +283,9 @@ void WidgetGallery::createBottomRightGroupBox() {
   layout->addWidget(spinBox, 2, 0, 1, 2);
   layout->addWidget(dateTimeEdit, 3, 0, 1, 2);
   layout->addWidget(slider, 4, 0);
-  layout->addWidget(scrollBar, 5, 0);
-  layout->addWidget(dial, 4, 1, 2, 1);
+  layout->addWidget(toolButton, 5, 0);
+  // layout->addWidget(dial, 4, 1, 2, 1);
+  layout->addWidget(withMenu, 5, 1);
   layout->setRowStretch(6, 1);
   // layout->setContentsMargins(0, 0, 0, 0);
   // bottomRightGroupBox->setFlat(true);

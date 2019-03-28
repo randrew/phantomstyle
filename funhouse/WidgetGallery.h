@@ -62,7 +62,6 @@ private:
   QSpinBox* spinBox;
   QDateTimeEdit* dateTimeEdit;
   QSlider* slider;
-  QScrollBar* scrollBar;
   QDial* dial;
   QProgressBar* progressBar;
 };
