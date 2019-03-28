@@ -266,7 +266,7 @@ decorations and QDial.)
 
 ## TODO
 
-* Screenshots
+* More screenshots
 
 * Several things haven't been fully tested (MDI windows, tick marks on sliders,
   a few more I can't think of.)
