@@ -216,6 +216,9 @@ A QStylePlugin hasn't been written yet, but should be easy to write.
 Tested on Qt 5.9 and later, but should work on earlier versions as well. Builds
 with MSVC (tested with 2017), GCC and clang.
 
+Uses several C++11 features, so C++11 is needed. C++14 and later are not
+needed.
+
 ## License
 
 LGPL 2.1.
