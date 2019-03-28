@@ -1,4 +1,4 @@
-# Phantom Style—A Traditional QStyle
+# Phantom Style
 
 Phantom is a QStyle for Qt which began as an overhaul of QFusionStyle. Similar
 to Fusion, it's designed to be a looks-the-same cross-platform style. It looks
@@ -214,9 +214,15 @@ A QStylePlugin hasn't been written yet, but should be easy to write.
 
 ## Compatibility
 
-Test on Qt 5.9 and later, but should work on earlier versions as well. Builds
+Tested on Qt 5.9 and later, but should work on earlier versions as well. Builds
 with MSVC (tested with 2017), GCC and clang.
 
 ## License
 
 LGPL 2.0.
+
+## TODO
+
+* Screenshots
+
+* Probably lots of bugs
