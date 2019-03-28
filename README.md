@@ -81,11 +81,10 @@ it has many fixes, objective improvements, and subjective improvements:
   * QPainter's gradients and alpha blending are slow.
 
   * The alpha blending done by QFusionStyle was almost always between two
-    colors constant colors that were known ahead of time, such as a shadow on
-    top of a base color, or a groupbox background on top of a window. The
-    resulting blended color could instead simply be calculated ahead of time
-    and painted as a solid rectangle, which is faster and can be
-    color-corrected.
+    constant colors that were known ahead of time, such as a shadow on top of a
+    base color, or a groupbox background on top of a window. The resulting
+    blended color could instead simply be calculated ahead of time and painted
+    as a solid rectangle, which is faster and can be color-corrected.
 
   * Overuse of gradients makes QFusionStyle look like it's from a specific time
     period (mid-2000s) instead of no time period at all.
@@ -173,9 +172,11 @@ it has many fixes, objective improvements, and subjective improvements:
   * Combo boxes are now the same height as push buttons, instead of being
     off-by-1-or-2.
 
+  * Spinboxes are now the same height as line edits.
+
   * Decorations in item view items are now the same height as a line of text by
     default, so that decorated and undecorated items do not have differing row
-    heights.
+    heights. (Manual specification of decoration size still works.)
 
   * Check marks and radio indicators are now visible alongside the icons in
     menu items, if both are specified.
@@ -186,7 +187,7 @@ it has many fixes, objective improvements, and subjective improvements:
   selected item is also the current item.
 
 * Added editable, compile-time parameters that control the styling of various
-  things:
+  things by editing a single constant in the source file:
 
   * Ratios for font-derived spacing and margins in menu items, line edits,
     check boxes, etc.
@@ -197,6 +198,29 @@ it has many fixes, objective improvements, and subjective improvements:
   * An alternate, faster code path using solid rect fills instead of
     anti-aliased roundrect is taken when a widget's rounding is set to 0 or
     near-0.
+
+  * Internal "sunken" shadows on some large widgets (line edit, spinbox,
+    progress bar) can be enabled or disabled.
+
+  * Internal shadow can also be enabled or disabled for checkboxes and radio
+    buttons.
+
+  * Shadows in scrollbars can be enabled or disabled.
+
+  * Tree view branch indicators can be made flush to the margin of the view
+    (Classic Mac OS style) or aligned to the text of the item.
+
+  * Item view decorations can be included in the visibly selected region or
+    not.
+
+  * Auto-raise for tool buttons in a tool bar by default can be enabled or
+    disabled.
+
+  * Use of QMenu or the Windows-style disclosure menu for combo boxes can be
+    enabled or disabled.
+
+  * Default decoration sizes based on fonts for item views can be enabled or
+    disabled (when disabled, uses the default small pixmap size.)
 
 * No use of private Qt classes or code.
 
