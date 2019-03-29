@@ -209,6 +209,12 @@ QWidget* tableWithColumns() {
     sep->setSeparator(true);
     acts += sep;
   };
+  auto sortA = new QAction(w);
+  sortA->setText("Sorting");
+  sortA->setCheckable(true);
+  QObject::connect(sortA, &QAction::triggered, w,
+                   [w](bool checked) { w->setSortingEnabled(checked); });
+  acts += sortA;
   auto stretchHorizA = new QAction(w);
   stretchHorizA->setText("Stretch Last Horizontal");
   stretchHorizA->setCheckable(true);

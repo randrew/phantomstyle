@@ -1417,7 +1417,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     if (!header)
       return;
     QRect r = header->rect;
-    QPoint offset = QPoint(0, -2);
+    QPoint offset = QPoint(0, -1);
     if (header->sortIndicator & QStyleOptionHeader::SortUp) {
       Ph::drawArrow(painter, r.translated(offset), Qt::DownArrow, swatch);
     } else if (header->sortIndicator & QStyleOptionHeader::SortDown) {
