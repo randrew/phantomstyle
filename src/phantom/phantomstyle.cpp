@@ -1366,7 +1366,9 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
   case PE_IndicatorArrowDown:
   case PE_IndicatorArrowRight:
   case PE_IndicatorArrowLeft: {
-    if (option->rect.width() <= 1 || option->rect.height() <= 1)
+    int rx, ry, rw, rh;
+    option->rect.getRect(&rx, &ry, &rw, &rh);
+    if (rw <= 1 || rh <= 1)
       break;
     Qt::ArrowType arrow = Qt::UpArrow;
     switch (elem) {
@@ -1385,7 +1387,22 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     default:
       break;
     }
-    Ph::drawArrow(painter, option->rect, arrow, swatch);
+    // The caller may give us a huge rect and expect a normal-sized icon inside
+    // of it, so we don't want to fill the entire thing with an arrow,
+    // otherwise certain buttons will look weird, like the tab bar scroll
+    // buttons. Might want to break these out into editable parameters?
+    const int MaxArrowExt = (int)Ph::dpiScaled(12);
+    const int MinMargin = (int)Ph::dpiScaled(3);
+    int aw, ah;
+    aw = qMin(MaxArrowExt, rw) - MinMargin;
+    ah = qMin(MaxArrowExt, rh) - MinMargin;
+    if (aw <= 2 || ah <= 2)
+      break;
+    aw += (rw - aw) % 2;
+    ah += (rh - ah) % 2;
+    int ax = (rw - aw) / 2 + rx;
+    int ay = (rh - ah) / 2 + ry;
+    Ph::drawArrow(painter, QRect(ax, ay, aw, ah), arrow, swatch);
     break;
   }
   case PE_IndicatorItemViewItemCheck: {
