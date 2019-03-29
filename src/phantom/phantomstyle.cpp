@@ -2045,6 +2045,8 @@ void PhantomStyle::drawControl(ControlElement element,
     QRect rect = header->rect;
     Qt::Orientation orientation = header->orientation;
     QStyleOptionHeader::SectionPosition position = header->position;
+    // See the "Table header layout reference" comment block at the bottom of
+    // this file for more information to help understand what's going on.
     bool isLeftToRight = header->direction != Qt::RightToLeft;
     bool isHorizontal = orientation == Qt::Horizontal;
     bool isVertical = orientation == Qt::Vertical;
@@ -2052,36 +2054,93 @@ void PhantomStyle::drawControl(ControlElement element,
     bool isBegin = position == QStyleOptionHeader::Beginning;
     bool isOnlyOne = position == QStyleOptionHeader::OnlyOneSection;
     Qt::Edges edges;
-    // Item views seem to do the wrong thing when laying out headers
-    // right-to-left, so we'll have some weirdo logic to try to get the lines
-    // to line up.
     bool spansToEnd = false;
+    bool isSpecialCorner = false;
 #if QT_CONFIG(itemviews)
     if ((isHorizontal && isLeftToRight && isEnd) ||
-        (isHorizontal && !isLeftToRight && isBegin) || (isVertical && isEnd)) {
+        (isHorizontal && !isLeftToRight && isBegin) || (isVertical && isEnd) ||
+        isOnlyOne) {
       auto hv = qobject_cast<const QHeaderView*>(widget);
-      spansToEnd = hv && hv->stretchLastSection();
+      if (hv) {
+        spansToEnd = hv->stretchLastSection();
+        // In the case where the header item is not stretched to the end, but
+        // could plausibly be in a position where it could happen to be exactly
+        // the right width or height to be appear to be stretched to the end,
+        // we'll check to see if it actually does exactly meet the right (or
+        // bottom in vertical, or left in RTL) edge, and omit drawing the edge
+        // if that's the case. This can commonly happen if you have a tree or
+        // list view and don't set it to stretch, but the widget is still sized
+        // exactly to hold the one column. (It could also happen if there's
+        // user code running to manually stretch the last section as
+        // necessary.)
+        if (!spansToEnd) {
+          QRect viewBound = hv->contentsRect();
+          if (isHorizontal) {
+            if (isLeftToRight) {
+              spansToEnd = rect.right() == viewBound.right();
+            } else {
+              spansToEnd = rect.left() == viewBound.left();
+            }
+          } else if (isVertical) {
+            spansToEnd = rect.bottom() == viewBound.bottom();
+          }
+        }
+      } else {
+        // We only need to do this check in RTL, because the corner button in
+        // RTL *doesn't* need hacks applied. In LTR, we can just treat the
+        // corner button like anything else on the horizontal header bar, and
+        // can skip doing this inherits check.
+        if (isOnlyOne && !isLeftToRight && widget &&
+            widget->inherits("QTableCornerButton")) {
+          isSpecialCorner = true;
+        }
+      }
     }
 #endif
-    if (isHorizontal) {
+
+    if (isSpecialCorner) {
+      // In RTL layout, the corner button in a table view doesn't have any
+      // offset problems. This branch we're on is only taken if we're in RTL
+      // layout and this is the corner button being drawn.
       edges |= Qt::BottomEdge;
-      if (!isOnlyOne) {
-        if (isLeftToRight) {
-          if (!spansToEnd) {
-            edges |= Qt::RightEdge;
-          }
-        } else {
+      if (isLeftToRight)
+        edges |= Qt::RightEdge;
+      else
+        edges |= Qt::LeftEdge;
+    } else if (isHorizontal) {
+      // This branch is taken for horizontal headers in either layout direction
+      // or for the corner button in LTR.
+      edges |= Qt::BottomEdge;
+      if (isLeftToRight) {
+        // In LTR, this code path may be for both the corner button *and* the
+        // actual header item. It doesn't matter in this case, and we were able
+        // to avoid doing an extra inherits call earlier.
+        if (!spansToEnd) {
           edges |= Qt::RightEdge;
-          // Note: the last section's left edge in RTL will be shifted to the
-          // right by 1 pixel. This seems unavoidable because we had to modify
-          // the rect to make the grid line up with the header edges (though it
-          // might be possible by changing something somewhere else.) There are
-          // also minor repainting issues when hiding/showing columns -- the
-          // edge draw from the hidden column will be left over until the next
-          // repaint.
-          if (isBegin && !spansToEnd) {
-            edges |= Qt::LeftEdge;
-          }
+        }
+      } else {
+        // Note: in right-to-left layouts for horizontal headers, the header
+        // view will unfortunately be shifted to the right by 1 pixel, due to
+        // what appears to be a Qt bug. This causes the vertical lines we draw
+        // in the header view to misalign with the grid, and causes the
+        // rightmost section to have its right edge clipped off. Therefore,
+        // we'll draw the separator on the on the right edge instead of the
+        // left edge. (We would have expected to draw it on the left edge in
+        // RTL layout.) This makes it line up with the grid again, except for
+        // the last section. right by 1 pixel.
+        //
+        // In RTL, the "Begin" position is on the left side for some reason
+        // (the same as LTR.) So "End" is always on the right. Ok, whatever.
+        // See the table at the bottom of this file if you're confused.
+        if (!isOnlyOne && !isEnd) {
+          edges |= Qt::RightEdge;
+        }
+        // The leftmost section in RTL has to draw on both its right and left
+        // edges, instead of just 1 edge like every other configuration. The
+        // left edge will be offset by 1 pixel from the grid, but it's the best
+        // we can do.
+        if (isBegin && !spansToEnd) {
+          edges |= Qt::LeftEdge;
         }
       }
     } else if (isVertical) {
@@ -2090,10 +2149,8 @@ void PhantomStyle::drawControl(ControlElement element,
       } else {
         edges |= Qt::LeftEdge;
       }
-      if (!isOnlyOne) {
-        if (!spansToEnd) {
-          edges |= Qt::BottomEdge;
-        }
+      if (!spansToEnd) {
+        edges |= Qt::BottomEdge;
       }
     }
     QRect bgRect = Ph::expandRect(rect, edges, -1);
@@ -4789,3 +4846,86 @@ QRect PhantomStyle::subElementRect(SubElement sr, const QStyleOption* opt,
   }
   return QCommonStyle::subElementRect(sr, opt, w);
 }
+
+// Table header layout reference
+// -----------------------------
+//
+// begin:  QStyleOptionHeader::Beginning;
+// mid:    QStyleOptionHeader::Middle;
+// end:    QStyleOptionHeader::End;
+// one:    QStyleOptionHeader::OnlyOneSection;
+// one*:
+//   This is specified as QStyleOptionHeader::OnlyOneSection, but the call to
+//   drawControl(CE_HeaderSection...) is being performed by an instance of
+//   QTableCornerButton, defined in qtableview.cpp as a subclass of
+//   QAbstractButton. Only table views can have these corner buttons, and they
+//   only appear if there are both at least 1 column and 1 row visible.
+//
+// Configuration A: A table view with both columns and rows
+//
+// Configuration B: A list view, or a tree view, or a table view with no rows
+// in the data or all rows hidden, such that the corner button is also made
+// hidden.
+//
+// Configuration C: A table view with no columns in the data or all columns
+// hidden, such that the corner button is also made hidden.
+//
+// Configuration A, Left-to-right, 4x4
+// [ one*  ][ begin ][ mid ][ mid ][ end ]
+// [ begin ]
+// [ mid   ]
+// [ mid   ]
+// [ end   ]
+//
+// Configuration A, Left-to-right, 2x2
+// [ one*  ][ begin ][ end ]
+// [ begin ]
+// [ end   ]
+//
+// Configuration A, Left-to-right, 1x1
+// [ one* ][ one ]
+// [ one  ]
+//
+// Configuration A, Right-to-left, 4x4
+// [ begin ][ mid ][ mid ][ end ][ one*  ]
+//                               [ begin ]
+//                               [ mid   ]
+//                               [ mid   ]
+//                               [ end   ]
+//
+// Configuration A, Right-to-left, 2x2
+//               [ begin ][ end ][ one*  ]
+//                               [ begin ]
+//                               [ end   ]
+//
+// Configuration A, Right-to-left, 1x1
+//                         [ one ][ one* ]
+//                                [ one  ]
+//
+// Configuration B, Left-to-right and right-to-left, 4 columns (table view:
+// 4 columns with 0 rows, list/tree view: 4 columns, rows count doesn't matter):
+// [ begin ][ mid ][ mid ][ end ]
+//
+// Configuration B, Left-to-right and right-to-left, 2 columns (table view:
+// 2 columns with 0 rows, list/tree view: 2 columns, rows count doesn't matter):
+// [ begin ][ end ]
+//
+// Configuration B, Left-to-right and right-to-left, 1 column (table view:
+// 1 column with 0 rows, list view: 1 column, rows count doesn't matter):
+// [ one ]
+//
+// Configuration C, left-to-right and right-to-left, table view with no columns
+// and 4 rows:
+// [ begin ]
+// [ mid   ]
+// [ mid   ]
+// [ end   ]
+//
+// Configuration C, left-to-right and right-to-left, table view with no columns
+// and 2 rows:
+// [ begin ]
+// [ end   ]
+//
+// Configuration C, left-to-right and right-to-left, table view with no columns
+// and 1 row:
+// [ one ]
