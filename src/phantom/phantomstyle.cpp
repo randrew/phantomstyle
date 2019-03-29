@@ -2045,24 +2045,47 @@ void PhantomStyle::drawControl(ControlElement element,
     QRect rect = option->rect;
     bool isLeftToRight = option->direction != Qt::RightToLeft;
     painter->fillRect(rect, swatch.color(S_window));
-    Qt::Edges edges = Qt::BottomEdge;
+    Qt::Edges edges;
     // Item views seem to do the wrong thing when laying out headers
     // right-to-left, so we'll have some weirdo logic to try to get the lines
     // to line up.
-    if (header->orientation == Qt::Horizontal &&
-        header->position != QStyleOptionHeader::OnlyOneSection) {
-      if (isLeftToRight) {
-        if (header->position != QStyleOptionHeader::End) {
+    if (header->orientation == Qt::Horizontal) {
+      edges |= Qt::BottomEdge;
+      if (header->position != QStyleOptionHeader::OnlyOneSection) {
+        if (isLeftToRight) {
+          bool addEdge = true;
+#if QT_CONFIG(itemviews)
+          if (header->position == QStyleOptionHeader::End) {
+            auto hv = qobject_cast<const QHeaderView*>(widget);
+            if (hv && hv->stretchLastSection()) {
+              addEdge = false;
+            }
+          }
+#endif
+          if (addEdge)
+            edges |= Qt::RightEdge;
+        } else {
           edges |= Qt::RightEdge;
         }
-      } else {
-        edges |= Qt::RightEdge;
       }
     } else if (header->orientation == Qt::Vertical) {
       if (isLeftToRight) {
         edges |= Qt::RightEdge;
       } else {
         edges |= Qt::LeftEdge;
+      }
+      if (header->position != QStyleOptionHeader::OnlyOneSection) {
+        bool addEdge = true;
+#if QT_CONFIG(itemviews)
+        if (header->position == QStyleOptionHeader::End) {
+          auto hv = qobject_cast<const QHeaderView*>(widget);
+          if (hv && hv->stretchLastSection()) {
+            addEdge = false;
+          }
+        }
+#endif
+        if (addEdge)
+          edges |= Qt::BottomEdge;
       }
     }
     Ph::fillRectEdges(painter, rect, edges, 1, swatch.color(S_window_outline));
