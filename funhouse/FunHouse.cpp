@@ -215,6 +215,22 @@ QWidget* tableWithColumns() {
   QObject::connect(sortA, &QAction::triggered, w,
                    [w](bool checked) { w->setSortingEnabled(checked); });
   acts += sortA;
+  auto alwaysScrollHA = new QAction(w);
+  alwaysScrollHA->setText("Always show H Scrollbar");
+  alwaysScrollHA->setCheckable(true);
+  QObject::connect(alwaysScrollHA, &QAction::triggered, w, [w](bool checked) {
+    w->setHorizontalScrollBarPolicy(checked ? Qt::ScrollBarAlwaysOn
+                                            : Qt::ScrollBarAsNeeded);
+  });
+  auto alwaysScrollVA = new QAction(w);
+  alwaysScrollVA->setText("Always show V Scrollbar");
+  alwaysScrollVA->setCheckable(true);
+  QObject::connect(alwaysScrollVA, &QAction::triggered, w, [w](bool checked) {
+    w->setVerticalScrollBarPolicy(checked ? Qt::ScrollBarAlwaysOn
+                                          : Qt::ScrollBarAsNeeded);
+  });
+  acts += alwaysScrollHA;
+  acts += alwaysScrollVA;
   auto stretchHorizA = new QAction(w);
   stretchHorizA->setText("Stretch Last Horizontal");
   stretchHorizA->setCheckable(true);

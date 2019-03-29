@@ -3327,6 +3327,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
 
     bool scrollBarGrooveShown = scrollBar->subControls & SC_ScrollBarGroove;
     bool isEnabled = scrollBar->state & State_Enabled;
+    bool hasRange = scrollBar->minimum != scrollBar->maximum;
 
     // Groove/gutter/trench area
     if (scrollBarGrooveShown) {
@@ -3361,7 +3362,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
 
       // Bonus fun: also draw a shadow cast by the scrollbar slider
       if (Ph::ScrollbarShadows && scrollBar->subControls & SC_ScrollBarSlider &&
-          isEnabled) {
+          isEnabled && hasRange) {
         if (isHorizontal) {
           r = scrollBarSlider;
           int leftwardEnd = scrollBarGroove.left() + 1;
@@ -3429,9 +3430,12 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       if (isSunken && scrollBar->activeSubControls & SC_ScrollBarSlider) {
         thumbFill = S_button_pressed;
         thumbSpecular = S_button_pressed_specular;
-      } else {
+      } else if (hasRange) {
         thumbFill = S_button;
         thumbSpecular = S_button_specular;
+      } else {
+        thumbFill = S_window;
+        thumbSpecular = S_none;
       }
       Qt::Edges edges;
       QRect edgeRect = scrollBarSlider;
@@ -3453,7 +3457,9 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::fillRectEdges(painter, edgeRect, edges, 1,
                         swatch.color(S_window_outline));
       painter->fillRect(mainRect, swatch.color(thumbFill));
-      Ph::fillRectOutline(painter, mainRect, 1, swatch.color(thumbSpecular));
+      if (thumbSpecular) {
+        Ph::fillRectOutline(painter, mainRect, 1, swatch.color(thumbSpecular));
+      }
     }
 
     // The SubLine (up/left) buttons
@@ -3462,9 +3468,12 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       if (isSunken && scrollBar->activeSubControls & SC_ScrollBarSubLine) {
         fill = S_button_pressed;
         specular = S_button_pressed_specular;
-      } else {
+      } else if (hasRange) {
         fill = S_button;
         specular = S_button_specular;
+      } else {
+        fill = S_window;
+        specular = S_none;
       }
 
       QRect btnRect = scrollBarSubLine;
@@ -3491,7 +3500,9 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::fillRectEdges(painter, btnRect, edges, 1,
                         swatch.color(S_window_outline));
       painter->fillRect(bgRect, swatch.color(fill));
-      Ph::fillRectOutline(painter, bgRect, 1, swatch.color(specular));
+      if (specular) {
+        Ph::fillRectOutline(painter, bgRect, 1, swatch.color(specular));
+      }
 
       // Arrows
       Qt::ArrowType arrowType;
@@ -3502,7 +3513,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       }
       int adj = qMin(bgRect.width(), bgRect.height()) / 4;
       Ph::drawArrow(painter, bgRect.adjusted(adj, adj, -adj, -adj), arrowType,
-                    swatch);
+                    swatch, hasRange);
     }
 
     // The AddLine (down/right) button
@@ -3511,9 +3522,12 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       if (isSunken && scrollBar->activeSubControls & SC_ScrollBarAddLine) {
         fill = S_button_pressed;
         specular = S_button_pressed_specular;
-      } else {
+      } else if (hasRange) {
         fill = S_button;
         specular = S_button_specular;
+      } else {
+        fill = S_window;
+        specular = S_none;
       }
       QRect btnRect = scrollBarAddLine;
       QRect bgRect = btnRect;
@@ -3529,7 +3543,9 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::fillRectEdges(painter, btnRect, edges, 1,
                         swatch.color(S_window_outline));
       painter->fillRect(bgRect, swatch.color(fill));
-      Ph::fillRectOutline(painter, bgRect, 1, swatch.color(specular));
+      if (specular) {
+        Ph::fillRectOutline(painter, bgRect, 1, swatch.color(specular));
+      }
 
       // Arrows
       Qt::ArrowType arrowType;
@@ -3540,7 +3556,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       }
       int adj = qMin(bgRect.width(), bgRect.height()) / 4;
       Ph::drawArrow(painter, bgRect.adjusted(adj, adj, -adj, -adj), arrowType,
-                    swatch);
+                    swatch, hasRange);
     }
     break;
   }
