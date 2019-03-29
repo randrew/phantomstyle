@@ -3,7 +3,6 @@
 
 class PhantomStylePrivate;
 class PhantomStyle : public QCommonStyle {
-  Q_OBJECT
 public:
   PhantomStyle();
   ~PhantomStyle();
