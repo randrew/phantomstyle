@@ -3,6 +3,7 @@
 #include <QBoxLayout>
 #include <QDebug>
 #include <QFormLayout>
+#include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
@@ -15,6 +16,7 @@
 #include <QStatusBar>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QTableWidget>
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeWidget>
@@ -196,6 +198,59 @@ QWidget* frames() {
   w->setLayout(grid);
   return w;
 }
+
+QWidget* tableWithColumns() {
+  auto w = new QTableWidget;
+  w->setColumnCount(4);
+  w->setRowCount(4);
+  QList<QAction*> acts;
+  auto addSep = [&] {
+    auto sep = new QAction(w);
+    sep->setSeparator(true);
+    acts += sep;
+  };
+  auto stretchHorizA = new QAction(w);
+  stretchHorizA->setText("Stretch Last Horizontal");
+  stretchHorizA->setCheckable(true);
+  QObject::connect(stretchHorizA, &QAction::triggered, w, [w](bool checked) {
+    w->horizontalHeader()->setStretchLastSection(checked);
+  });
+  auto stretchVertA = new QAction(w);
+  stretchVertA->setText("Stretch Last Vertical");
+  stretchVertA->setCheckable(true);
+  QObject::connect(stretchVertA, &QAction::triggered, w, [w](bool checked) {
+    w->verticalHeader()->setStretchLastSection(checked);
+  });
+  acts += stretchHorizA;
+  acts += stretchVertA;
+  addSep();
+  for (int i = 0; i < w->rowCount(); ++i) {
+    auto a = new QAction(w);
+    a->setText(QString::asprintf("Row Visible: %d", i + 1));
+    a->setCheckable(true);
+    a->setChecked(!w->isRowHidden(i));
+    QObject::connect(a, &QAction::triggered, w,
+                     [w, i](bool checked) { w->setRowHidden(i, !checked); });
+    acts += a;
+  }
+  addSep();
+  for (int i = 0; i < w->columnCount(); ++i) {
+    auto a = new QAction(w);
+    a->setText(QString::asprintf("Column Visible: %d", i + 1));
+    a->setCheckable(true);
+    a->setChecked(!w->isColumnHidden(i));
+    QObject::connect(a, &QAction::triggered, w,
+                     [w, i](bool checked) { w->setColumnHidden(i, !checked); });
+    acts += a;
+  }
+  w->addActions(acts);
+  w->horizontalHeader()->addActions(acts);
+  w->verticalHeader()->addActions(acts);
+  w->setContextMenuPolicy(Qt::ActionsContextMenu);
+  w->horizontalHeader()->setContextMenuPolicy(Qt::ActionsContextMenu);
+  w->verticalHeader()->setContextMenuPolicy(Qt::ActionsContextMenu);
+  return w;
+}
 } // namespace
 
 QMainWindow* FunHouse_create(QWidget* parent) {
@@ -213,6 +268,7 @@ QMainWindow* FunHouse_create(QWidget* parent) {
   auto mainTabs = new QTabWidget;
   mainTabs->setDocumentMode(true);
   mainWindow->setCentralWidget(mainTabs);
+  mainTabs->addTab(tableWithColumns(), "Table");
   mainTabs->addTab(frames(), "Frames");
   mainTabs->addTab(coolButtons(), "Push Buttons");
   mainTabs->addTab(toolButtonTest(), "Tool Buttons");
