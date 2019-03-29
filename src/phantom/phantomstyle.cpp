@@ -2042,52 +2042,62 @@ void PhantomStyle::drawControl(ControlElement element,
     auto header = qstyleoption_cast<const QStyleOptionHeader*>(option);
     if (!header)
       break;
-    QRect rect = option->rect;
-    bool isLeftToRight = option->direction != Qt::RightToLeft;
-    painter->fillRect(rect, swatch.color(S_window));
+    QRect rect = header->rect;
+    Qt::Orientation orientation = header->orientation;
+    QStyleOptionHeader::SectionPosition position = header->position;
+    bool isLeftToRight = header->direction != Qt::RightToLeft;
+    bool isHorizontal = orientation == Qt::Horizontal;
+    bool isVertical = orientation == Qt::Vertical;
+    bool isEnd = position == QStyleOptionHeader::End;
+    bool isBegin = position == QStyleOptionHeader::Beginning;
+    bool isOnlyOne = position == QStyleOptionHeader::OnlyOneSection;
     Qt::Edges edges;
     // Item views seem to do the wrong thing when laying out headers
     // right-to-left, so we'll have some weirdo logic to try to get the lines
     // to line up.
-    if (header->orientation == Qt::Horizontal) {
-      edges |= Qt::BottomEdge;
-      if (header->position != QStyleOptionHeader::OnlyOneSection) {
-        if (isLeftToRight) {
-          bool addEdge = true;
+    bool spansToEnd = false;
 #if QT_CONFIG(itemviews)
-          if (header->position == QStyleOptionHeader::End) {
-            auto hv = qobject_cast<const QHeaderView*>(widget);
-            if (hv && hv->stretchLastSection()) {
-              addEdge = false;
-            }
-          }
+    if ((isHorizontal && isLeftToRight && isEnd) ||
+        (isHorizontal && !isLeftToRight && isBegin) || (isVertical && isEnd)) {
+      auto hv = qobject_cast<const QHeaderView*>(widget);
+      spansToEnd = hv && hv->stretchLastSection();
+    }
 #endif
-          if (addEdge)
+    if (isHorizontal) {
+      edges |= Qt::BottomEdge;
+      if (!isOnlyOne) {
+        if (isLeftToRight) {
+          if (!spansToEnd) {
             edges |= Qt::RightEdge;
+          }
         } else {
           edges |= Qt::RightEdge;
+          // Note: the last section's left edge in RTL will be shifted to the
+          // right by 1 pixel. This seems unavoidable because we had to modify
+          // the rect to make the grid line up with the header edges (though it
+          // might be possible by changing something somewhere else.) There are
+          // also minor repainting issues when hiding/showing columns -- the
+          // edge draw from the hidden column will be left over until the next
+          // repaint.
+          if (isBegin && !spansToEnd) {
+            edges |= Qt::LeftEdge;
+          }
         }
       }
-    } else if (header->orientation == Qt::Vertical) {
+    } else if (isVertical) {
       if (isLeftToRight) {
         edges |= Qt::RightEdge;
       } else {
         edges |= Qt::LeftEdge;
       }
-      if (header->position != QStyleOptionHeader::OnlyOneSection) {
-        bool addEdge = true;
-#if QT_CONFIG(itemviews)
-        if (header->position == QStyleOptionHeader::End) {
-          auto hv = qobject_cast<const QHeaderView*>(widget);
-          if (hv && hv->stretchLastSection()) {
-            addEdge = false;
-          }
-        }
-#endif
-        if (addEdge)
+      if (!isOnlyOne) {
+        if (!spansToEnd) {
           edges |= Qt::BottomEdge;
+        }
       }
     }
+    QRect bgRect = Ph::expandRect(rect, edges, -1);
+    painter->fillRect(bgRect, swatch.color(S_window));
     Ph::fillRectEdges(painter, rect, edges, 1, swatch.color(S_window_outline));
     break;
   }
