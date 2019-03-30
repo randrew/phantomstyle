@@ -17,6 +17,7 @@
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTableWidget>
+#include <QComboBox>
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeWidget>
@@ -133,21 +134,39 @@ QWidget* tabBarOnly() {
 
 QWidget* coolButtons() {
   auto w = new QWidget;
-  auto vbox = new QHBoxLayout;
+  auto vbox = new QVBoxLayout;
+  auto hbox0 = new QHBoxLayout;
 
   auto pb0 = new QPushButton;
-  vbox->addWidget(pb0);
+  hbox0->addWidget(pb0);
   auto pb1 = new QPushButton;
   pb1->setText("Just text");
-  vbox->addWidget(pb1);
+  hbox0->addWidget(pb1);
   auto pb2 = new QPushButton;
   pb2->setText("Text and icon");
   pb2->setIcon(w->style()->standardIcon(QStyle::SP_ComputerIcon));
-  vbox->addWidget(pb2);
+  hbox0->addWidget(pb2);
   auto pb3 = new QPushButton;
   pb3->setIcon(w->style()->standardIcon(QStyle::SP_ComputerIcon));
-  vbox->addWidget(pb3);
+  hbox0->addWidget(pb3);
 
+  auto hbox1 = new QHBoxLayout;
+  auto cb0 = new QComboBox;
+  cb0->setEditable(true);
+  hbox1->addWidget(cb0);
+  auto cb1 = new QComboBox;
+  cb1->setEditable(true);
+  cb1->setEnabled(false);
+  hbox1->addWidget(cb1);
+  auto cb2 = new QComboBox;
+  cb2->setEditable(true);
+  cb2->addItem("One");
+  cb2->addItem("Two");
+  cb2->addItem("Three");
+  hbox1->addWidget(cb2);
+
+  vbox->addLayout(hbox0);
+  vbox->addLayout(hbox1);
   w->setLayout(vbox);
   return w;
 }

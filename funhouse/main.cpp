@@ -44,11 +44,16 @@ int main(int argc, char* argv[]) {
   // widget-specific fonts, like slightly larger fonts used for QMenuBar/item.
   //
   // a.setFont(a.font());
+#if 0
+  auto fnt = a.font();
+  fnt.setPointSize(14);
+  a.setFont(fnt);
+#endif
 #if 1
   auto gallery = Gallery_create();
   gallery->show();
 #endif
-#if 0
+#if 1
   auto fh = FunHouse_create();
   fh->show();
 #endif

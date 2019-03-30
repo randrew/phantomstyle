@@ -119,6 +119,7 @@ static const qreal PushButton_HorizontalPaddingFontHeightRatio = 1.0 / 2.0;
 static const qreal TabBar_HPaddingFontRatio = 1.25;
 static const qreal TabBar_VPaddingFontRatio = 1.0 / 1.25;
 static const qreal GroupBox_LabelBottomMarginFontRatio = 1.0 / 4.0;
+static const qreal ComboBox_ArrowMarginRatio = 1.0 / 3.25;
 
 static const qreal MenuBar_HorizontalPaddingFontRatio = 1.0 / 2.0;
 static const qreal MenuBar_VerticalPaddingFontRatio = 1.0 / 6.0;
@@ -3566,64 +3567,49 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
     if (!comboBox)
       break;
     painter->save();
+    bool isLeftToRight = option->direction != Qt::RightToLeft;
     bool hasFocus = option->state & State_HasFocus &&
                     option->state & State_KeyboardFocusChange;
-    bool sunken =
-        comboBox->state & State_On; // play dead, if combobox has no items
+    bool isSunken = comboBox->state & State_Sunken;
     QRect rect = comboBox->rect;
     QRect downArrowRect = proxy()->subControlRect(CC_ComboBox, comboBox,
                                                   SC_ComboBoxArrow, widget);
     // Draw a line edit
     if (comboBox->editable) {
-      QStyleOptionFrame buttonOption;
-      buttonOption.QStyleOption::operator=(*comboBox);
-      buttonOption.rect = rect;
-      buttonOption.state = (comboBox->state & (State_Enabled | State_MouseOver |
-                                               State_HasFocus)) |
-                           State_KeyboardFocusChange; // Always show hig
-      if (sunken) {
-        buttonOption.state |= State_Sunken;
-        buttonOption.state &= ~State_MouseOver;
-      }
-      if (comboBox->frame)
+      Swatchy buttonFill = isSunken ? S_button_pressed : S_button;
+      // if (!hasOptions)
+      //   buttonFill = S_window;
+      painter->fillRect(rect, swatch.color(buttonFill));
+      if (comboBox->frame) {
+        QStyleOptionFrame buttonOption;
+        buttonOption.QStyleOption::operator=(*comboBox);
+        buttonOption.rect = rect;
+        buttonOption.state =
+            (comboBox->state &
+             (State_Enabled | State_MouseOver | State_HasFocus)) |
+            State_KeyboardFocusChange;
+        if (isSunken) {
+          buttonOption.state |= State_Sunken;
+          buttonOption.state &= ~State_MouseOver;
+        }
         proxy()->drawPrimitive(PE_FrameLineEdit, &buttonOption, painter,
                                widget);
-      // Draw button clipped
-      painter->save();
-      painter->setClipRect(downArrowRect.adjusted(0, 0, 1, 0));
-      buttonOption.rect.setLeft(comboBox->direction == Qt::LeftToRight
-                                    ? downArrowRect.left() - 6
-                                    : downArrowRect.right() + 6);
-      proxy()->drawPrimitive(PE_PanelButtonCommand, &buttonOption, painter,
-                             widget);
-      painter->restore();
-      painter->setPen(hasFocus ? swatch.pen(S_highlight)
-                               : swatch.pen(S_window_outline));
-
-      if (sunken) {
-        if (comboBox->direction == Qt::RightToLeft) {
-          painter->drawLine(
-              QPoint(downArrowRect.right(), downArrowRect.top() + 2),
-              QPoint(downArrowRect.right(), downArrowRect.bottom() - 2));
-
+        QRect fr =
+            subControlRect(CC_ComboBox, option, SC_ComboBoxEditField, widget);
+        QRect br = rect;
+        if (isLeftToRight) {
+          br.setLeft(fr.x() + fr.width());
         } else {
-          painter->drawLine(
-              QPoint(downArrowRect.left(), downArrowRect.top() + 2),
-              QPoint(downArrowRect.left(), downArrowRect.bottom() - 2));
+          br.setRight(fr.left() - 1);
         }
-      } else {
-        int borderSize = 1;
-        if (comboBox->direction == Qt::RightToLeft) {
-          painter->drawLine(QPoint(downArrowRect.right() - 1,
-                                   downArrowRect.top() + borderSize),
-                            QPoint(downArrowRect.right() - 1,
-                                   downArrowRect.bottom() - borderSize));
-        } else {
-          painter->drawLine(
-              QPoint(downArrowRect.left(), downArrowRect.top() + borderSize),
-              QPoint(downArrowRect.left(),
-                     downArrowRect.bottom() - borderSize));
-        }
+        Qt::Edge edge = isLeftToRight ? Qt::LeftEdge : Qt::RightEdge;
+        Swatchy color = hasFocus ? S_highlight_outline : S_window_outline;
+        br.adjust(0, 1, 0, -1);
+        Ph::fillRectEdges(painter, br, edge, 1, swatch.color(color));
+        br.adjust(1, 0, -1, 0);
+        Swatchy specular =
+            isSunken ? S_button_pressed_specular : S_button_specular;
+        Ph::fillRectOutline(painter, br, 1, swatch.color(specular));
       }
     } else {
       QStyleOptionButton buttonOption;
@@ -3638,7 +3624,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       // of having pressed tab, control the combo box selection.
       if (comboBox->state & State_HasFocus)
         buttonOption.state |= State_KeyboardFocusChange;
-      if (sunken) {
+      if (isSunken) {
         buttonOption.state |= State_Sunken;
         buttonOption.state &= ~State_MouseOver;
       }
@@ -3646,8 +3632,13 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
                              widget);
     }
     if (comboBox->subControls & SC_ComboBoxArrow) {
+      int margin =
+          (int)((qreal)qMin(downArrowRect.width(), downArrowRect.height()) *
+                Ph::ComboBox_ArrowMarginRatio);
+      QRect r = downArrowRect;
+      r.adjust(margin, margin, -margin, -margin);
       // Draw the up/down arrow
-      Ph::drawArrow(painter, downArrowRect, Qt::DownArrow, swatch);
+      Ph::drawArrow(painter, r, Qt::DownArrow, swatch);
     }
     painter->restore();
     break;
@@ -4515,44 +4506,44 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
     break;
   }
 #endif // QT_CONFIG(groupbox)
+#if QT_CONFIG(combobox)
   case CC_ComboBox: {
+    auto cb = qstyleoption_cast<const QStyleOptionComboBox*>(option);
+    if (!cb)
+      return QRect();
+    int frame = cb->frame ? 1 : 0;
+    QRect r = option->rect;
+    r.adjust(frame, frame, -frame, -frame);
+    int dim = qMin(r.width(), r.height());
+    if (dim < 1)
+      return QRect();
     switch (subControl) {
+    case SC_ComboBoxFrame:
+      return cb->rect;
     case SC_ComboBoxArrow: {
-      if (!option)
-        break;
-      int fh = option->fontMetrics.height();
-      const int frameMargin = 2;
-      int len = (int)Ph::dpiScaled(7);
-      QSize sz(len, len);
-      // todo might need checking to see if too small
-      QRect container =
-          option->rect.adjusted(fh / 2, frameMargin, -(fh / 2), -frameMargin);
-      QRect r = QStyle::alignedRect(
-          option->direction, Qt::AlignRight | Qt::AlignVCenter, sz, container);
-      return r;
+      QRect r0 = r;
+      r0.setX((r0.x() + r0.width()) - dim + 1);
+      return visualRect(option->direction, option->rect, r0);
     }
     case SC_ComboBoxEditField: {
-      int frameWidth = 2;
-      rect = visualRect(option->direction, option->rect, rect);
-      rect.setRect(
-          option->rect.left() + frameWidth, option->rect.top() + frameWidth,
-          option->rect.width() - int(Ph::dpiScaled(19)) - 2 * frameWidth,
-          option->rect.height() - 2 * frameWidth);
-      if (auto box = qstyleoption_cast<const QStyleOptionComboBox*>(option)) {
-        if (!box->editable) {
-          rect.adjust(2, 0, 0, 0);
-          if (box->state & (State_Sunken | State_On))
-            rect.translate(1, 1);
-        }
+      // Add extra padding if not editable
+      int pad = 0;
+      if (!cb->editable) {
+        pad = (int)((qreal)cb->fontMetrics.height() *
+                    Ph::PushButton_HorizontalPaddingFontHeightRatio);
       }
-      rect = visualRect(option->direction, option->rect, rect);
-      break;
+      r.adjust(pad, 0, -dim, 0);
+      return visualRect(option->direction, option->rect, r);
+    }
+    case SC_ComboBoxListBoxPopup: {
+      return cb->rect;
     }
     default:
       break;
     }
     break;
   }
+#endif
   case CC_TitleBar: {
     auto tb = qstyleoption_cast<const QStyleOptionTitleBar*>(option);
     if (!tb)
