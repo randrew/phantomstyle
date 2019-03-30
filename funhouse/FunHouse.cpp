@@ -1,6 +1,7 @@
 #include "phantomstyle.h"
 #include <QAction>
 #include <QBoxLayout>
+#include <QComboBox>
 #include <QDebug>
 #include <QFormLayout>
 #include <QHeaderView>
@@ -17,7 +18,6 @@
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTableWidget>
-#include <QComboBox>
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeWidget>
@@ -292,6 +292,32 @@ QWidget* tableWithColumns() {
   w->verticalHeader()->setContextMenuPolicy(Qt::ActionsContextMenu);
   return w;
 }
+
+QWidget* verticalSizes() {
+  auto w = new QWidget;
+  auto vbox = new QVBoxLayout;
+
+  auto hbox0 = new QHBoxLayout;
+  auto le0 = new QLineEdit;
+  le0->setText("Hello");
+  hbox0->addWidget(le0);
+  auto cb0 = new QComboBox;
+  cb0->setEditable(true);
+  cb0->addItem("One");
+  cb0->addItem("Two");
+  cb0->addItem("Three");
+  hbox0->addWidget(cb0);
+  auto cb1 = new QComboBox;
+  cb1->setEditable(false);
+  cb1->addItem("One");
+  cb1->addItem("Two");
+  cb1->addItem("Three");
+  hbox0->addWidget(cb1);
+
+  vbox->addLayout(hbox0);
+  w->setLayout(vbox);
+  return w;
+}
 } // namespace
 
 QMainWindow* FunHouse_create(QWidget* parent) {
@@ -309,6 +335,7 @@ QMainWindow* FunHouse_create(QWidget* parent) {
   auto mainTabs = new QTabWidget;
   mainTabs->setDocumentMode(true);
   mainWindow->setCentralWidget(mainTabs);
+  mainTabs->addTab(verticalSizes(), "VSizes");
   mainTabs->addTab(tableWithColumns(), "Table");
   mainTabs->addTab(frames(), "Frames");
   mainTabs->addTab(coolButtons(), "Push Buttons");
