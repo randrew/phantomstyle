@@ -2812,11 +2812,17 @@ void PhantomStyle::drawControl(ControlElement element,
   case CE_ShapedFrame: {
     auto frameopt = qstyleoption_cast<const QStyleOptionFrame*>(option);
     if (frameopt) {
-      if (frameopt->frameShape == QFrame::VLine) {
+      if (frameopt->frameShape == QFrame::HLine) {
+        QRect r = option->rect;
+        r.setY(r.y() + r.height() / 2);
+        r.setHeight(1);
+        painter->fillRect(r, swatch.color(S_window_outline));
+        break;
+      } else if (frameopt->frameShape == QFrame::VLine) {
         QRect r = option->rect;
         r.setX(r.x() + r.width() / 2);
-        Ph::fillRectEdges(painter, r, Qt::LeftEdge, 1,
-                          swatch.color(S_window_outline));
+        r.setWidth(1);
+        painter->fillRect(r, swatch.color(S_window_outline));
         break;
       }
     }
