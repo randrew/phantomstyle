@@ -3594,8 +3594,8 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
         }
         proxy()->drawPrimitive(PE_FrameLineEdit, &buttonOption, painter,
                                widget);
-        QRect fr =
-            subControlRect(CC_ComboBox, option, SC_ComboBoxEditField, widget);
+        QRect fr = proxy()->subControlRect(CC_ComboBox, option,
+                                           SC_ComboBoxEditField, widget);
         QRect br = rect;
         if (isLeftToRight) {
           br.setLeft(fr.x() + fr.width());
@@ -4511,7 +4511,8 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
     auto cb = qstyleoption_cast<const QStyleOptionComboBox*>(option);
     if (!cb)
       return QRect();
-    int frame = cb->frame ? 1 : 0;
+    int frame =
+        cb->frame ? proxy()->pixelMetric(PM_ComboBoxFrameWidth, cb, widget) : 0;
     QRect r = option->rect;
     r.adjust(frame, frame, -frame, -frame);
     int dim = qMin(r.width(), r.height());
