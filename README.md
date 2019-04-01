@@ -238,12 +238,16 @@ it has many fixes, objective improvements, and subjective improvements:
 
 ## Use
 
+### Built into an application
+
 Add `src/phantom/phantom.pri` to your qmake .pro file for your project. There
 are no additional dependencies. It's also safe to construct a PhantomStyle
 object before instantiating a QApplication, because it doesn't interact with
 the environment or anything else.
 
-A QStylePlugin hasn't been written yet, but should be easy to write.
+### As a QStylePlugin
+
+A style plugin is available: [phantomstyleplugin.pro](src/styleplugin/phantomstyleplugin.pro)
 
 ## Compatibility
 
