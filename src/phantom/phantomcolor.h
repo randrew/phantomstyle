@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PHANTOMCOLOR_H
+#define PHANTOMCOLOR_H
 #include <QtGui/qcolor.h>
 
 namespace Phantom {
@@ -79,3 +80,4 @@ Hsl Hsl::ofQColor(const QColor& color) {
   return hsl_of_rgb(rgb.r, rgb.g, rgb.b);
 }
 } // namespace Phantom
+#endif

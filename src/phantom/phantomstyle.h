@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PHANTOMSTYLE_H
+#define PHANTOMSTYLE_H
 #include <QtWidgets/qcommonstyle.h>
 
 class PhantomStylePrivate;
@@ -58,3 +59,4 @@ public:
 protected:
   PhantomStylePrivate* d;
 };
+#endif

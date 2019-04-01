@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PHANTOMSTYLEPLUGIN_H
+#define PHANTOMSTYLEPLUGIN_H
 #include <QtWidgets/qstyleplugin.h>
 
 class PhantomStylePlugin : public QStylePlugin {
@@ -10,3 +11,4 @@ public:
   ~PhantomStylePlugin();
   QStyle* create(const QString& key) override;
 };
+#endif

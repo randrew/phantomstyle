@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PHANTOMTWEAK_H
+#define PHANTOMTWEAK_H
 
 // Phantom-specific tweaks that can be applied to QWidgets. These should not
 // impact the functionality of the software, but may provide minor visual
@@ -22,3 +23,4 @@ extern const char* const menubar_no_ruler;
 
 } // namespace Tweak
 } // namespace Phantom
+#endif
