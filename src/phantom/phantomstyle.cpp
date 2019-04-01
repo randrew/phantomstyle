@@ -1404,6 +1404,25 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     ah = qMin(MaxArrowExt, rh) - MinMargin;
     if (aw <= 2 || ah <= 2)
       break;
+#if QT_CONFIG(toolbutton)
+    // QCommonStyle's implementation of CC_ToolButton for non-instant popups
+    // gives us a pretty big rectangle to draw the arrow in -- shrink it. This
+    // is kind of a dirty temp hack thing until we do something smarter, like
+    // fully reimplement CC_ToolButton. Note that it passes us a regular
+    // QStyleOption and not a QStyleOptionToolButton in this case, so try to
+    // save some work before doing the inherits test.
+    if (arrow == Qt::DownArrow &&
+        !(bool)qstyleoption_cast<const QStyleOptionToolButton*>(option) &&
+        widget) {
+      auto tbutton = qobject_cast<const QToolButton*>(widget);
+      if (tbutton && tbutton->popupMode() != QToolButton::InstantPopup &&
+          tbutton->defaultAction()) {
+        int dim = (int)((qreal)qMin(rw, rh) * 0.25);
+        aw -= dim;
+        ah -= dim;
+      }
+    }
+#endif
     aw += (rw - aw) % 2;
     ah += (rh - ah) % 2;
     int ax = (rw - aw) / 2 + rx;
@@ -1432,7 +1451,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     break;
   }
   case PE_IndicatorButtonDropDown:
-    proxy()->drawPrimitive(PE_PanelButtonCommand, option, painter, widget);
+    proxy()->drawPrimitive(PE_PanelButtonTool, option, painter, widget);
     break;
 
   case PE_IndicatorToolBarSeparator: {
@@ -3004,10 +3023,11 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       painter->drawLine(centerX - 1, centerY, centerX + 3, centerY);
     } else if (spinBox->buttonSymbols == QAbstractSpinBox::UpDownArrows) {
       int xoffs = isLeftToRight ? 0 : 1;
-      Ph::drawArrow(painter, upRect.adjusted(4 + xoffs, 1, -5 + xoffs, 1), Qt::UpArrow, swatch,
+      Ph::drawArrow(painter, upRect.adjusted(4 + xoffs, 1, -5 + xoffs, 1),
+                    Qt::UpArrow, swatch,
                     spinBox->stepEnabled & QAbstractSpinBox::StepUpEnabled);
-      Ph::drawArrow(painter, downRect.adjusted(4 + xoffs, 0, -5 + xoffs, -1), Qt::DownArrow,
-                    swatch,
+      Ph::drawArrow(painter, downRect.adjusted(4 + xoffs, 0, -5 + xoffs, -1),
+                    Qt::DownArrow, swatch,
                     spinBox->stepEnabled & QAbstractSpinBox::StepDownEnabled);
     }
     break;
