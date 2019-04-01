@@ -4925,7 +4925,13 @@ QRect PhantomStyle::subElementRect(SubElement sr, const QStyleOption* opt,
   return QCommonStyle::subElementRect(sr, opt, w);
 }
 
+// Projects which don't use moc can define PHANTOM_NO_MOC to skip this include.
+// However, they will still need to deal with the Q_OBJECT macro in the header.
+// Easiest way is to probably keep your own copy of the header without the
+// macro in it. (If there's a smarter way to do this, please let me know.)
+#ifndef PHANTOM_NO_MOC
 #include "moc_phantomstyle.cpp"
+#endif
 
 // Table header layout reference
 // -----------------------------
