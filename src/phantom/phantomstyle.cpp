@@ -1420,6 +1420,14 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
         int dim = (int)((qreal)qMin(rw, rh) * 0.25);
         aw -= dim;
         ah -= dim;
+        // We have another hack in PE_IndicatorButtonDropDown where we shift
+        // the edge left or right by 1px to avoid having two borders touching
+        // (we make it overlap instead.) So we'll need to compensate for that
+        // in the arrow's position to avoid it looking off-center.
+        rw += 1;
+        if (option->direction != Qt::RightToLeft) {
+          rx -= 1;
+        }
       }
     }
 #endif
@@ -1450,9 +1458,18 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     }
     break;
   }
-  case PE_IndicatorButtonDropDown:
-    proxy()->drawPrimitive(PE_PanelButtonTool, option, painter, widget);
+  case PE_IndicatorButtonDropDown: {
+    // Temp hack until we implement CC_ToolButton: avoid double-stacked border
+    // by clipping off one edge slightly.
+    QStyleOption opt0 = *option;
+    if (opt0.direction != Qt::RightToLeft) {
+      opt0.rect.adjust(-1, 0, 0, 0);
+    } else {
+      opt0.rect.adjust(0, 0, 1, 0);
+    }
+    proxy()->drawPrimitive(PE_PanelButtonTool, &opt0, painter, widget);
     break;
+  }
 
   case PE_IndicatorToolBarSeparator: {
     QRect r = option->rect;
@@ -1463,6 +1480,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
       Ph::fillRectEdges(painter, r, Qt::RightEdge, 1,
                         swatch.color(S_window_divider));
     } else {
+      // TODO replace with new code
       const int margin = 6;
       const int offset = r.height() / 2;
       painter->setPen(QPen(option->palette.background().color().darker(110)));
