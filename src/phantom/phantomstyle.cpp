@@ -101,6 +101,7 @@ namespace {
 enum {
   MenuMinimumWidth = 10,  // Smallest width that menu items can have
   SplitterMaxLength = 25, // Length of splitter handle (not thickness)
+  SpinBox_ButtonWidth = 14,
 
   // These two are currently not based on font, but could be
   LineEdit_ContentsHPad = 2,
@@ -2924,41 +2925,36 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       break;
     const qreal rounding = Ph::SpinBox_Rounding;
     bool isLeftToRight = option->direction != Qt::RightToLeft;
-    QRect pixmapRect = spinBox->rect;
-    QRect r = pixmapRect.adjusted(0, 1, 0, -1);
+    const QRect rect = spinBox->rect;
     bool sunken = spinBox->state & State_Sunken;
     bool upIsActive = spinBox->activeSubControls == SC_SpinBoxUp;
     bool downIsActive = spinBox->activeSubControls == SC_SpinBoxDown;
     bool hasFocus = option->state & State_HasFocus;
     bool isEnabled = option->state & State_Enabled;
-    QStyleOptionSpinBox spinBoxCopy = *spinBox;
-    spinBoxCopy.rect = pixmapRect;
     QRect upRect =
-        proxy()->subControlRect(CC_SpinBox, &spinBoxCopy, SC_SpinBoxUp, widget);
-    QRect downRect = proxy()->subControlRect(CC_SpinBox, &spinBoxCopy,
-                                             SC_SpinBoxDown, widget);
-    // Quick hack, maybe should try to fix in the rect calc guy instead?
-    if (!isLeftToRight) {
-      upRect.translate(-2, 0);
-      downRect.translate(-2, 0);
-    }
-    // TODO spinbox arrows area ends up with different width in RTL
+        proxy()->subControlRect(CC_SpinBox, spinBox, SC_SpinBoxUp, widget);
+    QRect downRect =
+        proxy()->subControlRect(CC_SpinBox, spinBox, SC_SpinBoxDown, widget);
     if (spinBox->frame) {
-      QRect upDownRect = upRect.adjusted(0, -2, 0, downRect.height() + 2);
+      QRect upDownRect = upRect | downRect;
+      upDownRect.adjust(0, -1, 0, 1);
       painter->save(); // 0
       // Fill background
-      Ph::paintBorderedRoundRect(painter, r, rounding, swatch, S_none, S_base);
+      Ph::paintBorderedRoundRect(painter, rect, rounding, swatch, S_none,
+                                 S_base);
       // Draw button fill
       painter->setClipRect(upDownRect);
+      // Side with the border
+      Qt::Edge edge = isLeftToRight ? Qt::LeftEdge : Qt::RightEdge;
       Ph::paintBorderedRoundRect(
-          painter, upDownRect.adjusted(0, 0, isLeftToRight ? 1 : 0, 0),
+          painter, Ph::expandRect(upDownRect, Ph::oppositeEdge(edge), -1),
           rounding, swatch, S_none, S_button);
       painter->restore(); // 0
       if (Ph::OverhangShadows && !hasFocus && isEnabled) {
         // Imperfect, leaves tiny gap on left and right. Going closer would eat
         // into the outline, though.
         QRect shadowRect =
-            r.adjusted(qRound(rounding / 2), 1, -qRound(rounding / 2), -1);
+            rect.adjusted(qRound(rounding / 2), 1, -qRound(rounding / 2), -1);
         if (isLeftToRight) {
           shadowRect.setRight(upDownRect.left());
         } else {
@@ -2976,13 +2972,12 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
         painter->fillRect(downRect, swatch.color(S_button_pressed));
       }
       // Left or right border line
-      Qt::Edge edge = isLeftToRight ? Qt::LeftEdge : Qt::RightEdge;
       Ph::fillRectEdges(painter, upDownRect, edge, 1,
                         swatch.color(S_window_outline));
       Ph::PSave save(painter);
       // Outline over entire frame
       Swatchy outlineColor = hasFocus ? S_highlight_outline : S_window_outline;
-      Ph::paintBorderedRoundRect(painter, r, rounding, swatch, outlineColor,
+      Ph::paintBorderedRoundRect(painter, rect, rounding, swatch, outlineColor,
                                  S_none);
       save.restore();
     }
@@ -3008,9 +3003,10 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       painter->setPen(arrowColorDown);
       painter->drawLine(centerX - 1, centerY, centerX + 3, centerY);
     } else if (spinBox->buttonSymbols == QAbstractSpinBox::UpDownArrows) {
-      Ph::drawArrow(painter, upRect.adjusted(4, 1, -3, 0), Qt::UpArrow, swatch,
+      int xoffs = isLeftToRight ? 0 : 1;
+      Ph::drawArrow(painter, upRect.adjusted(4 + xoffs, 1, -5 + xoffs, 1), Qt::UpArrow, swatch,
                     spinBox->stepEnabled & QAbstractSpinBox::StepUpEnabled);
-      Ph::drawArrow(painter, downRect.adjusted(4, 1, -3, -1), Qt::DownArrow,
+      Ph::drawArrow(painter, downRect.adjusted(4 + xoffs, 0, -5 + xoffs, -1), Qt::DownArrow,
                     swatch,
                     spinBox->stepEnabled & QAbstractSpinBox::StepDownEnabled);
     }
@@ -4259,7 +4255,7 @@ QSize PhantomStyle::sizeFromContents(ContentsType type,
     break;
   }
   case CT_SpinBox:
-    newSize += QSize(0, 2);
+    // No adjustment necessary
     break;
   case CT_SizeGrip:
     newSize += QSize(4, 4);
@@ -4414,12 +4410,11 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
     auto spinbox = qstyleoption_cast<const QStyleOptionSpinBox*>(option);
     if (!spinbox)
       break;
+    // Some leftover Fusion code here. Should clean up this mess.
     int center = spinbox->rect.height() / 2;
-    // Is drawn with 3 pixels width in drawComplexControl, independently from
-    // PM_SpinBoxFrameWidth
-    int fw = spinbox->frame ? 3 : 0;
+    int fw = spinbox->frame ? 1 : 0;
     int y = fw;
-    const int buttonWidth = (int)Ph::dpiScaled(14);
+    const int buttonWidth = (int)Ph::dpiScaled(Ph::SpinBox_ButtonWidth) + 2;
     int x, lx, rx;
     x = spinbox->rect.width() - y - buttonWidth + 2;
     lx = fw;
