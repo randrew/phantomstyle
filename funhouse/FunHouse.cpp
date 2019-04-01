@@ -168,8 +168,32 @@ QWidget* coolButtons() {
   cb3->addItem("Here's quite a bit of text");
   hbox1->addWidget(cb3);
 
+  auto hbox2 = new QHBoxLayout;
+  auto tb0 = new QToolButton;
+  tb0->setText("Tool button");
+  hbox2->addWidget(tb0);
+  auto tb1 = new QToolButton;
+  tb1->setIcon(w->style()->standardIcon(QStyle::SP_ComputerIcon));
+  hbox2->addWidget(tb1);
+  auto tb2 = new QToolButton;
+  auto tb2menu = new QMenu;
+  tb2menu->setTitle("Normal");
+  tb2menu->addAction("One");
+  tb2menu->addAction("Two");
+  tb2->setDefaultAction(tb2menu->menuAction());
+  hbox2->addWidget(tb2);
+  auto tb3 = new QToolButton;
+  auto tb3menu = new QMenu;
+  tb3menu->setTitle("Instant");
+  tb3menu->addAction("One");
+  tb3menu->addAction("Two");
+  tb3->setDefaultAction(tb3menu->menuAction());
+  tb3->setPopupMode(QToolButton::InstantPopup);
+  hbox2->addWidget(tb3);
+
   vbox->addLayout(hbox0);
   vbox->addLayout(hbox1);
+  vbox->addLayout(hbox2);
   w->setLayout(vbox);
   return w;
 }
@@ -338,10 +362,10 @@ QMainWindow* FunHouse_create(QWidget* parent) {
   auto mainTabs = new QTabWidget;
   mainTabs->setDocumentMode(true);
   mainWindow->setCentralWidget(mainTabs);
+  mainTabs->addTab(coolButtons(), "Push Buttons");
   mainTabs->addTab(verticalSizes(), "VSizes");
   mainTabs->addTab(tableWithColumns(), "Table");
   mainTabs->addTab(frames(), "Frames");
-  mainTabs->addTab(coolButtons(), "Push Buttons");
   mainTabs->addTab(toolButtonTest(), "Tool Buttons");
   mainTabs->addTab(splitTest(), "Splitter");
   mainTabs->addTab(tabsInDirections(), "Tab Dirs");

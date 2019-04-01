@@ -1398,7 +1398,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     // otherwise certain buttons will look weird, like the tab bar scroll
     // buttons. Might want to break these out into editable parameters?
     const int MaxArrowExt = (int)Ph::dpiScaled(12);
-    const int MinMargin = (int)Ph::dpiScaled(3);
+    const int MinMargin = qMin(rw, rh) / 4;
     int aw, ah;
     aw = qMin(MaxArrowExt, rw) - MinMargin;
     ah = qMin(MaxArrowExt, rh) - MinMargin;
