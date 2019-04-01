@@ -4887,6 +4887,8 @@ QRect PhantomStyle::subElementRect(SubElement sr, const QStyleOption* opt,
   return QCommonStyle::subElementRect(sr, opt, w);
 }
 
+#include "moc_phantomstyle.cpp"
+
 // Table header layout reference
 // -----------------------------
 //

@@ -8,3 +8,5 @@ QStyle* PhantomStylePlugin::create(const QString& key) {
     return nullptr;
   return new PhantomStyle();
 }
+
+#include "moc_phantomstyleplugin.cpp"
