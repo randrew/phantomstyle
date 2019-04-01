@@ -101,6 +101,10 @@ namespace {
 enum {
   MenuMinimumWidth = 10,  // Smallest width that menu items can have
   SplitterMaxLength = 25, // Length of splitter handle (not thickness)
+
+  // These two are currently not based on font, but could be
+  LineEdit_ContentsHPad = 2,
+  ComboBox_NonEditable_ContentsHPad = 4,
 };
 
 static const qreal TabBarTab_Rounding = 0.0;
@@ -4236,17 +4240,24 @@ QSize PhantomStyle::sizeFromContents(ContentsType type,
     // Non-editable combo boxes have some extra padding on the left side,
     // similar to push buttons. We should account for that here to avoid text
     // being clipped off.
-    if (cb && !cb->editable) {
-      int pad = (int)((qreal)cb->fontMetrics.height() *
-                      Ph::PushButton_HorizontalPaddingFontHeightRatio);
-      newSize.rwidth() += pad;
+    if (cb) {
+      int pad = 0;
+      if (cb->editable) {
+        pad = (int)Ph::dpiScaled(Ph::LineEdit_ContentsHPad);
+      } else {
+        pad = (int)Ph::dpiScaled(Ph::ComboBox_NonEditable_ContentsHPad);
+      }
+      newSize.rwidth() += pad * 2;
     }
 #endif
     break;
   }
-  case CT_LineEdit:
+  case CT_LineEdit: {
     newSize += QSize(0, 3);
+    int pad = (int)Ph::dpiScaled(Ph::LineEdit_ContentsHPad);
+    newSize.rwidth() += pad * 2;
     break;
+  }
   case CT_SpinBox:
     newSize += QSize(0, 2);
     break;
@@ -4547,9 +4558,10 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
     case SC_ComboBoxEditField: {
       // Add extra padding if not editable
       int pad = 0;
-      if (!cb->editable) {
-        pad = (int)((qreal)cb->fontMetrics.height() *
-                    Ph::PushButton_HorizontalPaddingFontHeightRatio);
+      if (cb->editable) {
+        // Line edit padding already added
+      } else {
+        pad = (int)Ph::dpiScaled(Ph::ComboBox_NonEditable_ContentsHPad);
       }
       r.adjust(pad, 0, -dim, 0);
       return visualRect(option->direction, option->rect, r);
@@ -4865,6 +4877,13 @@ QRect PhantomStyle::subElementRect(SubElement sr, const QStyleOption* opt,
       return rect;
     }
     break;
+  }
+#endif
+#if QT_CONFIG(lineedit)
+  case SE_LineEditContents: {
+    QRect r = QCommonStyle::subElementRect(sr, opt, w);
+    int pad = (int)Phantom::dpiScaled(Phantom::LineEdit_ContentsHPad);
+    return r.adjusted(pad, 0, -pad, 0);
   }
 #endif
   default:
