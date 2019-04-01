@@ -3,16 +3,7 @@ QT += core gui widgets
 TARGET = funhouse
 TEMPLATE = app
 
-# The following define makes your compiler emit warnings if you use
-# any feature of Qt which has been marked as deprecated (the exact warnings
-# depend on your compiler). Please consult the documentation of the
-# deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
-
-# You can also make your code fail to compile if you use deprecated APIs.
-# In order to do so, uncomment the following line.
-# You can also select to disable deprecated APIs only up to a certain version of Qt.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 CONFIG += c++11
 CONFIG += rtti_off exceptions_off
@@ -66,12 +57,7 @@ msvc {
     }
 
     # Disable MSVC C4068: unknown pragma warning. We use clang pragmas -- even
-    # in MSVC builds -- to control the clang static analyzer's output. It would
-    # be preferable to always suppress the warnings correctly, but it ends up
-    # requiring multiple lines of nested pragmas for different compilers in
-    # order to do this. So we'll just disable it globally. There are still
-    # parts of the Ripcord code where we use nested pragmas to do it, but going
-    # forward we'll just rely on this MSVC warning always being off.
+    # in MSVC builds -- to control the clang static analyzer's output.
     QMAKE_CXXFLAGS *= /wd4068
 
     # Enable warning on unhandled enums in switch cases
