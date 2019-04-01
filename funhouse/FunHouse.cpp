@@ -160,10 +160,13 @@ QWidget* coolButtons() {
   hbox1->addWidget(cb1);
   auto cb2 = new QComboBox;
   cb2->setEditable(true);
-  cb2->addItem("One");
+  cb2->addItem("One but with quite a bit of text");
   cb2->addItem("Two");
   cb2->addItem("Three");
   hbox1->addWidget(cb2);
+  auto cb3 = new QComboBox;
+  cb3->addItem("Here's quite a bit of text");
+  hbox1->addWidget(cb3);
 
   vbox->addLayout(hbox0);
   vbox->addLayout(hbox1);

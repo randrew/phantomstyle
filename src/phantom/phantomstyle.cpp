@@ -4229,9 +4229,21 @@ QSize PhantomStyle::sizeFromContents(ContentsType type,
   case CT_ToolButton:
     newSize += QSize(2, 2);
     break;
-  case CT_ComboBox:
+  case CT_ComboBox: {
     newSize += QSize(0, 3);
+#if QT_CONFIG(combobox)
+    auto cb = qstyleoption_cast<const QStyleOptionComboBox*>(option);
+    // Non-editable combo boxes have some extra padding on the left side,
+    // similar to push buttons. We should account for that here to avoid text
+    // being clipped off.
+    if (cb && !cb->editable) {
+      int pad = (int)((qreal)cb->fontMetrics.height() *
+                      Ph::PushButton_HorizontalPaddingFontHeightRatio);
+      newSize.rwidth() += pad;
+    }
+#endif
     break;
+  }
   case CT_LineEdit:
     newSize += QSize(0, 3);
     break;
