@@ -4787,8 +4787,16 @@ int PhantomStyle::styleHint(StyleHint hint, const QStyleOption* option,
 #else
     return 1;
 #endif
-  case SH_ScrollBar_Transient:
+  // Some Linux distros might want to enable this, but it doesn't behave very
+  // consistently with varied QPalettes, depending on how the QPA and icons
+  // deal with both light and dark themes. It might seem weird to just disable
+  // this, but none of (Mac, Windows, BeOS/Haiku) show icons in dialog buttons,
+  // and the results on Linux are generally pretty messy -- not sure why it's
+  // historically been the default, especially when other button types
+  // generally don't have any icons.
+  case SH_DialogButtonBox_ButtonsHaveIcons:
     return 0;
+  case SH_ScrollBar_Transient:
   case SH_EtchDisabledText:
   case SH_DitherDisabledText:
   case SH_ToolBox_SelectedPageTitleBold:
