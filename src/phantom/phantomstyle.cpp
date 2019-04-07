@@ -798,6 +798,11 @@ int fontMetricsWidth(const QFontMetrics& fontMetrics, const QString& text) {
 #endif
 }
 
+// This always draws the arrow with the correct aspect ratio, even if the
+// provided bounding rect is non-square. The base edge of the triangle is
+// snapped to a whole pixel to avoid anti-aliasing making it look soft.
+//
+// Expected time (release): 5usecs for regular-sized arrows
 Q_NEVER_INLINE void drawArrow(QPainter* p, QRect rect,
                               Qt::ArrowType arrowDirection,
                               const QBrush& brush) {
@@ -866,7 +871,11 @@ Q_NEVER_INLINE void drawArrow(QPainter* p, QRect rect,
   }
 }
 
-// Expected time (release): 5usecs for regular-sized arrows
+// Pass allowEnabled as false to always draw the arrow with the disabled color,
+// even if the underlying palette's current color group is not disabled. Useful
+// for parts of widgets which may want to be drawn as disabled even if the
+// actual widget is not set as disabled, such as scrollbar step buttons when
+// the scrollbar has no movable range.
 Q_NEVER_INLINE void drawArrow(QPainter* painter, QRect rect, Qt::ArrowType type,
                               const PhSwatch& swatch,
                               bool allowEnabled = true) {
@@ -880,7 +889,7 @@ Q_NEVER_INLINE void drawArrow(QPainter* painter, QRect rect, Qt::ArrowType type,
 
 // This draws exactly within the rect provided. If you provide a square rect,
 // it will appear too wide -- you probably want to shrink the width of your
-// square first by multiplying it with CheckMark_WidthOf_heightScale.
+// square first by multiplying it with CheckMark_WidthOfHeightScale.
 Q_NEVER_INLINE void drawCheck(QPainter* painter, QPen& scratchPen,
                               const QRectF& r, const PhSwatch& swatch,
                               Swatchy color) {
