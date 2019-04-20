@@ -665,6 +665,7 @@ QRect menuItemArrowRect(const MenuItemMetrics& metrics,
 }
 #endif
 
+Q_NEVER_INLINE
 void progressBarFillRects(
     const QStyleOptionProgressBar* bar,
     // The rect that represents the filled/completed region
