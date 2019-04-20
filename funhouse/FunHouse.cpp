@@ -12,7 +12,9 @@
 #include <QMenuBar>
 #include <QMetaEnum>
 #include <QPainter>
+#include <QProgressBar>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QTabBar>
@@ -345,6 +347,37 @@ QWidget* verticalSizes() {
   w->setLayout(vbox);
   return w;
 }
+
+QWidget* progressBars() {
+  auto w = new QWidget;
+  auto vbox = new QVBoxLayout;
+  auto barsV = new QVBoxLayout;
+  auto barsH = new QHBoxLayout;
+  auto spin = new QSpinBox;
+  spin->setRange(0, 100);
+  spin->setValue(30);
+  for (auto orient : {Qt::Horizontal, Qt::Vertical}) {
+    for (auto isInvert : {false, true}) {
+      auto pbar = new QProgressBar;
+      pbar->setOrientation(orient);
+      pbar->setInvertedAppearance(isInvert);
+      if (orient == Qt::Horizontal) {
+        barsV->addWidget(pbar);
+      } else {
+        barsH->addWidget(pbar);
+      }
+      pbar->setRange(spin->minimum(), spin->maximum());
+      pbar->setValue(spin->value());
+      QObject::connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), pbar,
+                       &QProgressBar::setValue);
+    }
+  }
+  vbox->addLayout(barsV);
+  vbox->addLayout(barsH);
+  vbox->addWidget(spin);
+  w->setLayout(vbox);
+  return w;
+}
 } // namespace
 
 QMainWindow* FunHouse_create(QWidget* parent) {
@@ -362,6 +395,7 @@ QMainWindow* FunHouse_create(QWidget* parent) {
   auto mainTabs = new QTabWidget;
   mainTabs->setDocumentMode(true);
   mainWindow->setCentralWidget(mainTabs);
+  mainTabs->addTab(progressBars(), "Progress Bars");
   mainTabs->addTab(coolButtons(), "Push Buttons");
   mainTabs->addTab(verticalSizes(), "VSizes");
   mainTabs->addTab(tableWithColumns(), "Table");
