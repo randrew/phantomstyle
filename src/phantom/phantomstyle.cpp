@@ -665,6 +665,52 @@ QRect menuItemArrowRect(const MenuItemMetrics& metrics,
 }
 #endif
 
+void progressBarFillRects(
+    const QStyleOptionProgressBar* bar,
+    // The rect that represents the filled/completed region
+    QRect& outFilled,
+    // The rect that represents the incomplete region
+    QRect& outNonFilled,
+    // Whether or not the progress bar is indeterminate
+    bool& outIsIndeterminate) {
+  QRect ra = bar->rect;
+  QRect rb = ra;
+  bool isHorizontal = bar->orientation != Qt::Vertical;
+  bool isInverted = bar->invertedAppearance;
+  bool isIndeterminate = bar->minimum == 0 && bar->maximum == 0;
+  bool isForward = !isHorizontal || bar->direction != Qt::RightToLeft;
+  if (isInverted)
+    isForward = !isForward;
+  int maxLen = isHorizontal ? ra.width() : ra.height();
+  const auto availSteps =
+      qMax(Q_INT64_C(1), qint64(bar->maximum) - bar->minimum);
+  const auto progress =
+      qMax(bar->progress, bar->minimum); // workaround for bug in QProgressBar
+  const auto progressSteps = qint64(progress) - bar->minimum;
+  const auto progressBarWidth = progressSteps * maxLen / availSteps;
+  int barLen = isIndeterminate ? maxLen : (int)progressBarWidth;
+  if (isHorizontal) {
+    if (isForward) {
+      ra.setWidth(barLen);
+      rb.setX(barLen);
+    } else {
+      ra.setX(ra.x() + ra.width() - barLen);
+      rb.setWidth(rb.width() - barLen);
+    }
+  } else {
+    if (isForward) {
+      ra.setY(ra.y() + ra.height() - barLen);
+      rb.setHeight(rb.height() - barLen);
+    } else {
+      ra.setHeight(barLen);
+      rb.setY(barLen);
+    }
+  }
+  outFilled = ra;
+  outNonFilled = rb;
+  outIsIndeterminate = isIndeterminate;
+}
+
 #if QT_CONFIG(dial)
 int calcBigLineSize(int radius) {
   int bigLineSize = radius / 6;
@@ -2319,41 +2365,16 @@ void PhantomStyle::drawControl(ControlElement element,
     if (!bar)
       break;
     const qreal rounding = Ph::ProgressBar_Rounding;
-    QRect r = option->rect;
-    bool isHorizontal = bar->orientation != Qt::Vertical;
-    bool isInverted = bar->invertedAppearance;
-    bool isIndeterminate = bar->minimum == 0 && bar->maximum == 0;
-    bool isForward = !isHorizontal || bar->direction != Qt::RightToLeft;
-    if (isInverted)
-      isForward = !isForward;
-    int maxLen = isHorizontal ? r.width() : r.height();
-    const auto availSteps =
-        qMax(Q_INT64_C(1), qint64(bar->maximum) - bar->minimum);
-    const auto progress =
-        qMax(bar->progress, bar->minimum); // workaround for bug in QProgressBar
-    const auto progressSteps = qint64(progress) - bar->minimum;
-    const auto progressBarWidth = progressSteps * maxLen / availSteps;
-    int barLen = isIndeterminate ? maxLen : (int)progressBarWidth;
-    if (isHorizontal) {
-      if (isForward) {
-        r.setWidth(barLen);
-      } else {
-        r.setX(r.x() + r.width() - barLen);
-      }
-    } else {
-      if (isForward) {
-        r.setY(r.y() + r.height() - barLen);
-      } else {
-        r.setHeight(barLen);
-      }
-    }
-
+    QRect filled, nonFilled;
+    bool isIndeterminate = false;
+    Ph::progressBarFillRects(bar, filled, nonFilled, isIndeterminate);
     if (isIndeterminate || bar->progress > bar->minimum) {
       Ph::PSave save(painter);
-      Ph::paintBorderedRoundRect(painter, r, rounding, swatch,
+      Ph::paintBorderedRoundRect(painter, filled, rounding, swatch,
                                  S_progressBar_outline, S_progressBar);
-      Ph::paintBorderedRoundRect(painter, r.adjusted(1, 1, -1, -1), rounding,
-                                 swatch, S_progressBar_specular, S_none);
+      Ph::paintBorderedRoundRect(painter, filled.adjusted(1, 1, -1, -1),
+                                 rounding, swatch, S_progressBar_specular,
+                                 S_none);
       if (isIndeterminate) {
         // TODO paint indeterminate indicator
 #if QT_CONFIG(animation)
@@ -2380,15 +2401,43 @@ void PhantomStyle::drawControl(ControlElement element,
     QRect textRect = QStyle::alignedRect(option->direction, Qt::AlignCenter,
                                          textSize, option->rect);
     textRect &= r;
-    int pad = (int)Ph::dpiScaled(1.0);
-    QRect bubbleRect = textRect.adjusted(-pad * 2, -pad, pad * 2, pad);
-    bubbleRect &= r;
+    if (textRect.isEmpty())
+      break;
+    QRect filled, nonFilled;
+    bool isIndeterminate = false;
+    Ph::progressBarFillRects(bar, filled, nonFilled, isIndeterminate);
+    QRect textNonFilledR = textRect & nonFilled;
+    QRect textFilledR = textRect & filled;
+    bool needsNonFilled = !textNonFilledR.isEmpty();
+    bool needsFilled = !textFilledR.isEmpty();
+    bool needsMasking = needsNonFilled && needsFilled;
     Ph::PSave save(painter);
-    Ph::paintSolidRoundRect(painter, bubbleRect, Ph::ProgressBar_Rounding,
-                            swatch, S_base);
-    painter->setPen(swatch.pen(S_text));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawText(textRect, bar->text, Qt::AlignHCenter | Qt::AlignVCenter);
+    if (needsNonFilled) {
+      if (needsMasking) {
+        painter->save();
+        painter->setClipRect(textNonFilledR);
+      }
+      painter->setPen(swatch.pen(S_text));
+      painter->setBrush(Qt::NoBrush);
+      painter->drawText(textRect, bar->text,
+                        Qt::AlignHCenter | Qt::AlignVCenter);
+      if (needsMasking) {
+        painter->restore();
+      }
+    }
+    if (needsFilled) {
+      if (needsMasking) {
+        painter->save();
+        painter->setClipRect(textFilledR);
+      }
+      painter->setPen(swatch.pen(S_highlightedText));
+      painter->setBrush(Qt::NoBrush);
+      painter->drawText(textRect, bar->text,
+                        Qt::AlignHCenter | Qt::AlignVCenter);
+      if (needsMasking) {
+        painter->restore();
+      }
+    }
     break;
   }
 #if QT_CONFIG(menubar)
