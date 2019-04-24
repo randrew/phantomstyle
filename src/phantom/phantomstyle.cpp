@@ -1759,36 +1759,62 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
       // it will, though.) To replicate, set to RTL mode, and move the current
       // around in a table view without the selection being on the current.
       if (option->state & QStyle::State_Selected) {
-        bool isSingleSelection = false;
+        bool showCurrent = true;
         bool hasTableGrid = false;
         auto itemView = qobject_cast<const QAbstractItemView*>(widget);
         if (itemView) {
           const auto selectionMode = itemView->selectionMode();
           if (selectionMode == QAbstractItemView::SingleSelection) {
-            isSingleSelection = true;
+            showCurrent = false;
           } else {
+            // Table views will can have a "current" frame drawn even if the
+            // "current" is within the selected range. Other item views won't,
+            // which means the "current" frame will be invisible if it's on a
+            // selected item. This is a compromise between the broken drawing
+            // behavior of Qt item views of drawing "current" frames when they
+            // don't make sense (like a tree view where you can only select
+            // entire rows, but Qt will the frame rect around whatever column
+            // was last clicked on by the mouse, but using keyboard navigation
+            // has no effect) and not drawing them at all.
+            bool isTableView = false;
             if (auto tableView = qobject_cast<const QTableView*>(itemView)) {
               hasTableGrid = tableView->showGrid();
+              isTableView = true;
             }
             const auto selectionModel = itemView->selectionModel();
             if (selectionModel) {
               const auto selection = selectionModel->selection();
               if (selection.count() == 1) {
                 const auto& range = selection.at(0);
-                if (range.width() == 1 && range.height() == 1) {
-                  isSingleSelection = true;
+                if (isTableView) {
+                  // For table views, we don't draw the "current" frame if
+                  // there is exactly one cell selected and the "current" is
+                  // that cell, or if there is exactly one row or one column
+                  // selected with the behavior set to the corresponding
+                  // selection, and the "current" is that one row or column.
+                  const auto selectionBehavior = itemView->selectionBehavior();
+                  if ((range.width() == 1 && range.height() == 1) ||
+                      (selectionBehavior == QAbstractItemView::SelectRows &&
+                       range.height() == 1) ||
+                      (selectionBehavior == QAbstractItemView::SelectColumns &&
+                       range.width() == 1)) {
+                    showCurrent = false;
+                  }
+                } else {
+                  // For any other type of item view, don't draw the "current"
+                  // frame if there is a single contiguous selection, and the
+                  // "current" is within that selection. If there's a
+                  // discontiguous selection, that means the user is probably
+                  // doing something more advanced, and we should just draw the
+                  // focus frame, even if Qt might be doing it badly in some
+                  // cases.
+                  showCurrent = false;
                 }
               }
             }
           }
         }
-        if (isSingleSelection) {
-          // Don't need to draw this at all, actually. And would just appear to
-          // cut off text if there's not much extra margin, since this color is
-          // probably the same as the bg color.
-          // Ph::fillRectOutline(painter, option->rect, 1,
-          //                     swatch.color(S_highlight));
-        } else {
+        if (showCurrent) {
           // TODO handle dark-highlight-light-text
           const QColor& borderColor =
               swatch.color(S_itemView_multiSelection_currentBorder);
