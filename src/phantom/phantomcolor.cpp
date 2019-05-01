@@ -212,19 +212,29 @@ l2y(double l)
 static void
 xyz2luv(Triplet* in_out)
 {
-    double var_u = (4.0 * in_out->a) / (in_out->a + (15.0 * in_out->b) + (3.0 * in_out->c));
-    double var_v = (9.0 * in_out->b) / (in_out->a + (15.0 * in_out->b) + (3.0 * in_out->c));
-    double l = y2l(in_out->b);
-    double u = 13.0 * l * (var_u - ref_u);
-    double v = 13.0 * l * (var_v - ref_v);
+    double divisor = in_out->a + (15.0 * in_out->b) + (3.0 * in_out->c);
+    if(divisor != 0.)
+    {
+      double var_u = (4.0 * in_out->a) / divisor;
+      double var_v = (9.0 * in_out->b) / divisor;
+      double l = y2l(in_out->b);
+      double u = 13.0 * l * (var_u - ref_u);
+      double v = 13.0 * l * (var_v - ref_v);
 
-    in_out->a = l;
-    if(l < 0.00000001) {
-        in_out->b = 0.0;
-        in_out->c = 0.0;
-    } else {
-        in_out->b = u;
-        in_out->c = v;
+      in_out->a = l;
+      if(l < 0.00000001) {
+          in_out->b = 0.0;
+          in_out->c = 0.0;
+      } else {
+          in_out->b = u;
+          in_out->c = v;
+      }
+    }
+    else
+    {
+      in_out->a = 0.;
+      in_out->b = 0.;
+      in_out->c = 0.;
     }
 }
 
