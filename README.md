@@ -1,8 +1,8 @@
 > And some say it's still using desktop computers, even to this day 👻
 
-![phantom screenshot light](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_1x_demo.png)
+![phantom screenshot light](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_demo_1x_light_3.png)
 
-![phantom screenshot dark](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_1x_demo_dark.png)
+![phantom screenshot dark](https://raw.githubusercontent.com/wiki/randrew/phantomstyle/images/phantom_demo_1x_dark_3.png)
 
 [More screenshots](https://github.com/randrew/phantomstyle/wiki/Comparison-Screenshots)
 
