@@ -80,7 +80,9 @@
 #include <easy/profiler.h>
 #endif
 
+QT_BEGIN_NAMESPACE
 Q_GUI_EXPORT int qt_defaultDpiX();
+QT_END_NAMESPACE
 
 namespace Phantom {
 namespace Tweak {
