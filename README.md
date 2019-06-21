@@ -188,7 +188,7 @@ Uses `auto` from C++11, so C++11 is needed. C++14 and later are not needed.
     `SH_Menu_SloppySubMenus`, but didn't also specify that the submenus should
     not be closed after a timeout if nothing else is moused over
     (`SH_Menu_SubMenuDontStartSloppyOnLeave`). It also did not specify
-    `SH_Menu_SubMenuUniDirection` and several other thints which should have
+    `SH_Menu_SubMenuUniDirection` and several other hints which should have
     been specified, which would cause the reactions of a QMenu to appear to lag
     behind the user's movements or to close submenus unnecessarily.
 
