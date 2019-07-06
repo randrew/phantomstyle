@@ -3893,7 +3893,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
 #if QT_CONFIG(toolbutton)
   case CC_ToolButton: {
     auto tbopt = qstyleoption_cast<const QStyleOptionToolButton*>(option);
-    if (Ph::AllowToolBarAutoRaise || !tbopt || !widget ||
+    if (Ph::AllowToolBarAutoRaise || !tbopt || !widget || !widget->parent() ||
         !widget->parent()->inherits("QToolBar")) {
       QCommonStyle::drawComplexControl(control, option, painter, widget);
       break;
