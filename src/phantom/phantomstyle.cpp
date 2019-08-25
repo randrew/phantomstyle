@@ -2588,7 +2588,7 @@ void PhantomStyle::drawControl(ControlElement element,
       QIcon::Mode mode = isEnabled ? QIcon::Normal : QIcon::Disabled;
       if (isSelected && isEnabled)
         mode = QIcon::Selected;
-      QPixmap pixmap;
+      QIcon::State state = isChecked ? QIcon::On : QIcon::Off;
 
       // TODO hmm, we might be ending up with blurry icons at size 15 instead
       // of 16 for example on Windows.
@@ -2603,10 +2603,8 @@ void PhantomStyle::drawControl(ControlElement element,
         iconSize = combo->iconSize();
       }
 #endif
-      if (isChecked)
-        pixmap = menuItem->icon.pixmap(iconSize, mode, QIcon::On);
-      else
-        pixmap = menuItem->icon.pixmap(iconSize, mode);
+      QWindow* window = widget ? widget->windowHandle() : nullptr;
+      QPixmap pixmap = menuItem->icon.pixmap(window, iconSize, mode, state);
       const int pixw = (int)(pixmap.width() / pixmap.devicePixelRatio());
       const int pixh = (int)(pixmap.height() / pixmap.devicePixelRatio());
       QRect pixmapRect = QStyle::alignedRect(option->direction, Qt::AlignCenter,
