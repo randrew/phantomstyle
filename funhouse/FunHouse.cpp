@@ -1,6 +1,7 @@
 #include "phantomstyle.h"
 #include <QAction>
 #include <QBoxLayout>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDebug>
 #include <QFormLayout>
@@ -56,6 +57,53 @@ QWidget* treeAndDetailsWidget() {
   form->addRow("Address", new QLineEdit("Cool Place"));
   hbox->addLayout(form);
   w->setLayout(hbox);
+  return w;
+}
+
+QWidget* multiColumnTreeList() {
+  auto w = new QWidget;
+  auto hbox = new QHBoxLayout;
+  auto tree = new QTreeWidget;
+  tree->setColumnCount(3);
+  for (int i = 0; i < 5; ++i) {
+    auto item = new QTreeWidgetItem(tree);
+    item->setText(0, QString::asprintf("Item %d", i));
+    for (int j = 0; j < 5; ++j) {
+      auto item0 = new QTreeWidgetItem(item);
+      item0->setText(0, QString::asprintf("Nested %d", j));
+      if (j == 3)
+        item0->setData(0, Qt::DecorationRole, QColor(120, 120, 60));
+      for (int k = 0; k < 5; ++k) {
+        auto item1 = new QTreeWidgetItem(item0);
+        item1->setText(0, QString::asprintf("Nested Again %d", k));
+        for (int l = 0; l < 5; ++l) {
+          auto item2 = new QTreeWidgetItem(item1);
+          item2->setText(0, QString::asprintf("Nested Yet Again %d", l));
+        }
+      }
+    }
+  }
+  auto form = new QFormLayout;
+  auto spanCheck = new QCheckBox("All columns show focus");
+  auto selCheck = new QCheckBox("Extend selection");
+  auto onUpdate = [tree, spanCheck, selCheck] {
+    bool allFocus = spanCheck->isChecked();
+    if (tree->allColumnsShowFocus() != allFocus)
+      tree->setAllColumnsShowFocus(allFocus);
+    QAbstractItemView::SelectionMode selMode =
+        selCheck->isChecked() ? QAbstractItemView::ExtendedSelection
+                              : QAbstractItemView::SingleSelection;
+    if (tree->selectionMode() != selMode)
+      tree->setSelectionMode(selMode);
+  };
+  QObject::connect(spanCheck, &QCheckBox::toggled, spanCheck, onUpdate);
+  QObject::connect(selCheck, &QCheckBox::toggled, selCheck, onUpdate);
+  form->addWidget(spanCheck);
+  form->addWidget(selCheck);
+  hbox->addWidget(tree);
+  hbox->addLayout(form);
+  w->setLayout(hbox);
+  onUpdate();
   return w;
 }
 
@@ -405,6 +453,7 @@ QMainWindow* FunHouse_create(QWidget* parent) {
   mainTabs->addTab(tabsInDirections(), "Tab Dirs");
   mainTabs->addTab(tabBarOnly(), "Tab Bar");
   mainTabs->addTab(treeAndDetailsWidget(), "Tree");
+  mainTabs->addTab(multiColumnTreeList(), "Tree Columns");
   mainWindow->statusBar()->setSizeGripEnabled(true);
 
   auto tbara = mainWindow->addToolBar("Tester A");
