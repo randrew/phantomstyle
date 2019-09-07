@@ -1753,18 +1753,17 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     if (!(fropt->state & State_KeyboardFocusChange))
       return;
 #if QT_CONFIG(itemviews)
-    if (fropt->state & State_Item && widget &&
-        widget->inherits("QAbstractItemView")) {
-      // TODO either our grid line hack is interfering, or Qt has a bug, but in
-      // RTL layout the grid borders can leave junk behind in the grid areas
-      // and the right edge of the focus rect may not get painted. (Sometimes
-      // it will, though.) To replicate, set to RTL mode, and move the current
-      // around in a table view without the selection being on the current.
-      if (option->state & QStyle::State_Selected) {
-        bool showCurrent = true;
-        bool hasTableGrid = false;
-        auto itemView = qobject_cast<const QAbstractItemView*>(widget);
-        if (itemView) {
+    if (fropt->state & State_Item) {
+      if (auto itemView = qobject_cast<const QAbstractItemView*>(widget)) {
+        // TODO either our grid line hack is interfering, or Qt has a bug, but
+        // in RTL layout the grid borders can leave junk behind in the grid
+        // areas and the right edge of the focus rect may not get painted.
+        // (Sometimes it will, though.) To replicate, set to RTL mode, and move
+        // the current around in a table view without the selection being on
+        // the current.
+        if (option->state & QStyle::State_Selected) {
+          bool showCurrent = true;
+          bool hasTableGrid = false;
           const auto selectionMode = itemView->selectionMode();
           if (selectionMode == QAbstractItemView::SingleSelection) {
             showCurrent = false;
@@ -1815,20 +1814,28 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
               }
             }
           }
+          if (showCurrent) {
+            // TODO handle dark-highlight-light-text
+            const QColor& borderColor =
+                swatch.color(S_itemView_multiSelection_currentBorder);
+            const int thickness = hasTableGrid ? 2 : 1;
+            Ph::fillRectOutline(painter, option->rect, thickness, borderColor);
+          }
+        } else {
+          Ph::fillRectOutline(painter, option->rect, 1,
+                              swatch.color(S_highlight_outline));
         }
-        if (showCurrent) {
-          // TODO handle dark-highlight-light-text
-          const QColor& borderColor =
-              swatch.color(S_itemView_multiSelection_currentBorder);
-          const int thickness = hasTableGrid ? 2 : 1;
-          Ph::fillRectOutline(painter, option->rect, thickness, borderColor);
-        }
-      } else {
-        Ph::fillRectOutline(painter, option->rect, 1,
-                            swatch.color(S_highlight_outline));
+        break;
       }
-      break;
     }
+    // It would be nice to also handle QTreeView's allColumnsShowFocus thing in
+    // the above code, in addition to the normal cases for focus rects in item
+    // views. Unfortunately, with allColumnsShowFocus set to true,
+    // QTreeView::drawRow() calls the style to paint with PE_FrameFocusRect for
+    // the row frame with the widget set to nullptr. This makes it basically
+    // impossible to figure out that we need to draw a special frame for it.
+    // So, if any application code is using that mode in a QTreeView, it won't
+    // get special item view frames. Too bad.
 #endif
     Ph::PSave save(painter);
     Ph::paintBorderedRoundRect(painter, option->rect,
