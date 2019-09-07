@@ -40,4 +40,11 @@ msvc {
 
     # Enable warning on unhandled enums in switch cases
     QMAKE_CXXFLAGS *= /w14062
+
+    # For newer versions of VS2017 and up, C5045 will be enabled when Wall is
+    # specified. This warning causes MSVC to tell you when the /Qspectre
+    # switch, if enabled, would have caused spectre mitigations to be inserted
+    # by the compiler. The warnings emitted in that case are not relevant for a
+    # QStylePlugin.
+    QMAKE_CXXFLAGS *= /wd5045
 }

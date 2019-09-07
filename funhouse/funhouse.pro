@@ -63,6 +63,12 @@ msvc {
     # Enable warning on unhandled enums in switch cases
     QMAKE_CXXFLAGS *= /w14062
 
+    # For newer versions of VS2017 and up, C5045 will be enabled when Wall is
+    # specified. This warning causes MSVC to tell you when the /Qspectre
+    # switch, if enabled, would have caused spectre mitigations to be inserted
+    # by the compiler. This is not relevant for a demo app.
+    QMAKE_CXXFLAGS *= /wd5045
+
     # Speed up startup time when debugging with cdb
     # (copied from qt creator. this might not do anything.)
     QMAKE_LFLAGS_DEBUG += /INCREMENTAL:NO
