@@ -157,6 +157,21 @@ static const bool ShowItemViewDecorationSelected = false;
 static const bool UseQMenuForComboBoxPopup = true;
 static const bool ItemView_UseFontHeightForDecorationSize = true;
 
+// Whether or not the non-raised tabs in a tab bar have shininess/highlights to
+// them. Setting this to false adds an extra visual hint for distinguishing
+// between the current and non-current tabs, but makes the non-current tabs
+// appear less clickable. Other ways to increase the visual differences could
+// be to increase the color contrast for the background fill color, or increase
+// the vertical offset. However, increasing the vertical offset comes with some
+// layout challenges, and increasing the color contrast further may visually
+// imply an incorrect layout structure. Not sure what's best.
+//
+// This doesn't disable creating the color/brush resource, even though it's
+// currently a compile-time-only option, because it may be changed to be part
+// of some dynamic config system for Phantom in the future, or have a
+// per-widget style hint associated with it.
+static const bool TabBar_InactiveTabsHaveSpecular = false;
+
 struct Grad {
   Grad(const QColor& from, const QColor& to) {
     rgbA = Rgb::ofQColor(from);
@@ -2881,7 +2896,9 @@ void PhantomStyle::drawControl(ControlElement element,
         specular = S_tabFrame_specular;
       } else {
         thisFillColor = S_inactiveTabYesFrame;
-        specular = S_inactiveTabYesFrame_specular;
+        specular = Ph::TabBar_InactiveTabsHaveSpecular
+                       ? S_inactiveTabYesFrame_specular
+                       : S_none;
       }
     } else {
       tabFrameColor = S_window;
@@ -2890,7 +2907,9 @@ void PhantomStyle::drawControl(ControlElement element,
         specular = S_window_specular;
       } else {
         thisFillColor = S_inactiveTabNoFrame;
-        specular = S_inactiveTabNoFrame_specular;
+        specular = Ph::TabBar_InactiveTabsHaveSpecular
+                       ? S_inactiveTabNoFrame_specular
+                       : S_none;
       }
     }
     Ph::paintBorderedRoundRect(painter, drawRect, rounding, swatch,
