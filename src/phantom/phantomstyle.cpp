@@ -417,14 +417,62 @@ Q_NEVER_INLINE void PhSwatch::loadFromQPalette(const QPalette& pal) {
   }
 }
 
-// We'll do our own hashing of QPalette. QPalette's cacheKey() isn't very
-// reliable -- it seems to change to a new random number whenever it's
-// modified, with the exception of the currentColorGroup being changed. This
-// kind of sucks for us, because it means two QPalette's can have the same
-// contents but hash to different values. And this actually happens a lot!
-// We'll do the hashing ourselves. Also, we're not interested in all of the
-// colors, only some of them, and we ignore pens/brushes.
-uint custom_hash_qpalette(const QPalette& p) {
+// This is the "hash" (not really a hash) function we'll use on the happy fast
+// path when looking up a PhSwatch for a given QPalette. It's fragile, because
+// it uses QPalette::cacheKey(), so it may not match even when the contents
+// (currentColorGroup + the RGB colors) of the QPalette are actually a match.
+// But it's cheaper to calculate, so we'll store a single one of these "hashes"
+// for the head (most recently used) cached PhSwatch, and check to see if it
+// matches. This is the most common case, so we can usually save some work by
+// doing this. (The second most common case is probably having a different
+// ColorGroup but the rest of the contents are the same, but we don't have a
+// special path for that.)
+Q_ALWAYS_INLINE quint64 fastfragile_hash_qpalette(const QPalette& p) {
+  union {
+    qint64 i;
+    quint64 u;
+  } x;
+  x.i = p.cacheKey();
+  // QPalette::ColorGroup has range 0..5 (inclusive), so it only uses 3 bits.
+  // The high 32 bits in QPalette::cacheKey() are a global incrementing serial
+  // number for the QPalette creation. We don't store (2^29-1) things in our
+  // cache, and I doubt that many will ever be created in a real application
+  // while also retaining some of them across such a broad time range, so it's
+  // really unlikely that repurposing these top 3 bits to also include the
+  // QPalette::currentColorGroup() (which the cacheKey doesn't include for some
+  // reason...) will generate a collision.
+  //
+  // This may not be true in the future if the way the QPalette::cacheKey() is
+  // generated changes. If that happens, change to use the definition of
+  // `fastfragile_hash_qpalette` below, which is less likely to collide with an
+  // arbitrarily numbered key but also does more work.
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+  x.u = x.u ^ ((quint64)p.currentColorGroup() << (64 - 3));
+  return x.u;
+#else
+  // Use this definition here if the contents/layout of QPalette::cacheKey()
+  // (as in, the C++ code in qpalette.cpp) are changed. We'll also put a Qt6
+  // guard for it, so that it will default to a more safe definition on the
+  // next guaranteed big breaking change for Qt. A warning will hopefully get
+  // someone to double-check it at some point in the future.
+#warning "Verify contents and layout of QPalette::cacheKey() have not changed"
+  QtPrivate::QHashCombine c;
+  uint h = qHash(p.currentColorGroup());
+  h = c(h, (uint)(x.u & 0xFFFFFFFFu));
+  h = c(h, (uint)((x.u >> 32) & 0xFFFFFFFFu));
+  return h;
+#endif
+}
+
+// This hash function is for when we want an actual accurate hash of a
+// QPalette. QPalette's cacheKey() isn't very reliable -- it seems to change to
+// a new random number whenever it's modified, with the exception of the
+// currentColorGroup being changed. This kind of sucks for us, because it means
+// two QPalette's can have the same contents but hash to different values. And
+// this actually happens a lot! We'll do the hashing ourselves. Also, we're not
+// interested in all of the colors, only some of them, and we ignore
+// pens/brushes.
+uint accurate_hash_qpalette(const QPalette& p) {
   // Probably shouldn't use this, could replace with our own guy. It's not a
   // great hasher anyway.
   QtPrivate::QHashCombine c;
@@ -439,13 +487,15 @@ uint custom_hash_qpalette(const QPalette& p) {
   return h;
 }
 
-Q_NEVER_INLINE PhSwatchPtr getCachedSwatchOfQPalette(PhSwatchCache* cache,
-                                                     const QPalette& qpalette) {
+Q_NEVER_INLINE PhSwatchPtr deep_getCachedSwatchOfQPalette(
+    PhSwatchCache* cache,
+    int cacheCount, // Just saving a call to cache->count()
+    const QPalette& qpalette) {
   // Calculate our hash key from the QPalette's current ColorGroup and the
-  // QPalette's cacheKey(). We have to mix the ColorGroup in ourselves, because
-  // QPalette does not account for it in the cache key.
-  uint key = custom_hash_qpalette(qpalette);
-  int n = cache->count();
+  // actual RGBA values that we use. We have to mix the ColorGroup in
+  // ourselves, because QPalette does not account for it in the cache key.
+  uint key = accurate_hash_qpalette(qpalette);
+  int n = cacheCount;
   int idx = -1;
   for (int i = 0; i < n; ++i) {
     const auto& x = cache->at(i);
@@ -491,12 +541,61 @@ Q_NEVER_INLINE PhSwatchPtr getCachedSwatchOfQPalette(PhSwatchCache* cache,
   }
 }
 
+Q_NEVER_INLINE PhSwatchPtr getCachedSwatchOfQPalette(
+    PhSwatchCache* cache,
+    quint64* headSwatchFastKey, // Optimistic fast-path quick hash key
+    const QPalette& qpalette) {
+  quint64 ck = fastfragile_hash_qpalette(qpalette);
+  int cacheCount = cache->count();
+  // This hint is counter-productive if we're being called in a way that
+  // interleaves different QPalettes. But misses to this optimistic path were
+  // rare in my tests. (Probably not going to amount to any significant
+  // difference, anyway.)
+  if (Q_LIKELY(cacheCount > 0 && *headSwatchFastKey == ck)) {
+    return cache->at(0).second;
+  }
+  *headSwatchFastKey = ck;
+  return deep_getCachedSwatchOfQPalette(cache, cacheCount, qpalette);
+}
+
 } // namespace
 } // namespace Phantom
 
 class PhantomStylePrivate {
 public:
   PhantomStylePrivate();
+
+  // A fast'n'easy hash of QPalette::cacheKey()+QPalette::currentColorGroup()
+  // of only the head element of swatchCache list. The most common thing that
+  // happens when deriving a PhSwatch from a QPalette is that we just end up
+  // re-using the last one that we used. For that case, we can potentially save
+  // calling `accurate_hash_qpalette()` and instead use the value returned by
+  // QPalette::cacheKey() (and QPalette::currentColorGroup()) and compare it to
+  // the last one that we used. If it matches, then we know we can just use the
+  // head of the cache list without having to do any further checks, which
+  // saves a few hundred (!) nanoseconds.
+  //
+  // However, the `QPalette::cacheKey()` value is fragile and may change even
+  // if none of the colors in the QPalette have changed. In other words, all of
+  // the colors in a QPalette may match another QPalette (or a derived
+  // PhSwatch) even if the `QPalette::cacheKey()` value is different.
+  //
+  // So if `QPalette::cacheKey()+currentColorGroup()` doesn't match, then we'll
+  // use our more accurate `accurate_hash_qpalette()` to get a more accurate
+  // comparison key, and then search through the cache list to find a matching
+  // cached PhSwatch. (The more accurate cache key is what we store alongside
+  // each PhSwatch element, as the `.first` in each QPair. The
+  // QPalette::cacheKey() that we associate with the PhSwatch in the head
+  // position, `headSwatchFastKey`, is only stored for our single head element,
+  // as a special fast case.) If we find it, we'll move it to the head of the
+  // cache list. If not, we'll make a new one, and put it at the head. Either
+  // way, the `headSwatchFastKey` will be updated to the
+  // `fastfragile_qpalette_hash()` of the QPalette that we needed to derive a
+  // PhSwatch from, so that if we get called with the same QPalette again next
+  // time (which is probably going to be the case), it'll match and we can take
+  // the fast path.
+  quint64 headSwatchFastKey;
+
   Phantom::PhSwatchCache swatchCache;
   QPen checkBox_pen_scratch;
 };
@@ -1209,7 +1308,7 @@ Q_NEVER_INLINE void paintBorderedRoundRect(QPainter* p, QRect rect,
 } // namespace Phantom
 
 
-PhantomStylePrivate::PhantomStylePrivate() {}
+PhantomStylePrivate::PhantomStylePrivate() : headSwatchFastKey(0) {}
 
 PhantomStyle::PhantomStyle() : d(new PhantomStylePrivate) {
   setObjectName(QLatin1String("Phantom"));
@@ -1262,8 +1361,8 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
   using Swatchy = Phantom::Swatchy;
   using namespace Phantom::SwatchColors;
   namespace Ph = Phantom;
-  auto ph_swatchPtr =
-      getCachedSwatchOfQPalette(&d->swatchCache, option->palette);
+  auto ph_swatchPtr = getCachedSwatchOfQPalette(
+      &d->swatchCache, &d->headSwatchFastKey, option->palette);
   const Ph::PhSwatch& swatch = *ph_swatchPtr.data();
   const int state = option->state;
   // Cast to int here to suppress warnings about cases listed which are not in
@@ -2023,8 +2122,8 @@ void PhantomStyle::drawControl(ControlElement element,
   using Swatchy = Phantom::Swatchy;
   using namespace Phantom::SwatchColors;
   namespace Ph = Phantom;
-  auto ph_swatchPtr =
-      Ph::getCachedSwatchOfQPalette(&d->swatchCache, option->palette);
+  auto ph_swatchPtr = Ph::getCachedSwatchOfQPalette(
+      &d->swatchCache, &d->headSwatchFastKey, option->palette);
   const Ph::PhSwatch& swatch = *ph_swatchPtr.data();
 
   switch (element) {
@@ -3005,8 +3104,8 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
   using Swatchy = Phantom::Swatchy;
   using namespace Phantom::SwatchColors;
   namespace Ph = Phantom;
-  auto ph_swatchPtr =
-      Ph::getCachedSwatchOfQPalette(&d->swatchCache, option->palette);
+  auto ph_swatchPtr = Ph::getCachedSwatchOfQPalette(
+      &d->swatchCache, &d->headSwatchFastKey, option->palette);
   const Ph::PhSwatch& swatch = *ph_swatchPtr.data();
 
   switch (control) {
@@ -4932,8 +5031,8 @@ int PhantomStyle::styleHint(StyleHint hint, const QStyleOption* option,
   case SH_Table_GridLineColor: {
     using namespace Phantom::SwatchColors;
     namespace Ph = Phantom;
-    auto ph_swatchPtr =
-        Ph::getCachedSwatchOfQPalette(&d->swatchCache, option->palette);
+    auto ph_swatchPtr = Ph::getCachedSwatchOfQPalette(
+        &d->swatchCache, &d->headSwatchFastKey, option->palette);
     const Ph::PhSwatch& swatch = *ph_swatchPtr.data();
     // Qt code in table views for drawing grid lines is broken. See case for
     // CE_ItemViewItem painting for more information.
