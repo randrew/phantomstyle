@@ -145,6 +145,7 @@ static const qreal MenuItem_SubMenuArrowWidthFontRatio = 1.0 / 2.75;
 static const qreal MenuItem_SeparatorHeightFontRatio = 1.0 / 1.5;
 static const qreal MenuItem_CheckMarkVerticalInsetFontRatio = 1.0 / 5.0;
 static const qreal MenuItem_IconRightSpaceFontRatio = 1.0 / 3.0;
+static const bool MenuItem_ShowCheckOnItemsWithIcons = true;
 
 static const bool BranchesOnEdge = false;
 static const bool OverhangShadows = false;
@@ -728,30 +729,39 @@ QRect menuItemContentRect(const MenuItemMetrics& metrics, QRect itemRect,
 }
 QRect menuItemCheckRect(const MenuItemMetrics& metrics,
                         Qt::LayoutDirection direction, QRect itemRect,
-                        bool hasArrow) {
+                        bool hasArrow, bool hasIcon) {
   QRect r = menuItemContentRect(metrics, itemRect, hasArrow);
   int checkVMargin = (int)((qreal)metrics.fontHeight *
                            MenuItem_CheckMarkVerticalInsetFontRatio);
+  int checkRightSpace = 0;
+  if (hasIcon)
+    checkRightSpace = (int)2*(metrics.iconRightSpace - metrics.checkRightSpace);
   if (checkVMargin < 0)
     checkVMargin = 0;
+  if (checkRightSpace < 0)
+    checkRightSpace = 0;
   r.setSize(QSize(metrics.checkWidth, metrics.fontHeight));
-  r.adjust(0, checkVMargin, 0, -checkVMargin);
+  r.adjust(checkRightSpace, checkVMargin, checkRightSpace, -checkVMargin);
   return QStyle::visualRect(direction, itemRect, r) & itemRect;
 }
 QRect menuItemIconRect(const MenuItemMetrics& metrics,
                        Qt::LayoutDirection direction, QRect itemRect,
-                       bool hasArrow) {
+                       bool hasArrow, bool hasCheck) {
   QRect r = menuItemContentRect(metrics, itemRect, hasArrow);
-  r.setX(r.x() + metrics.checkWidth + metrics.checkRightSpace);
+  if (hasCheck) {
+    r.setX(r.x() + metrics.checkWidth + metrics.checkRightSpace);
+  }
   r.setSize(QSize(metrics.fontHeight, metrics.fontHeight));
   return QStyle::visualRect(direction, itemRect, r) & itemRect;
 }
 QRect menuItemTextRect(const MenuItemMetrics& metrics,
                        Qt::LayoutDirection direction, QRect itemRect,
-                       bool hasArrow, bool hasIcon, int tabWidth) {
+                       bool hasArrow, bool hasIcon, bool hasCheck, int tabWidth) {
   QRect r = menuItemContentRect(metrics, itemRect, hasArrow);
-  r.setX(r.x() + metrics.checkWidth + metrics.checkRightSpace);
-  if (hasIcon) {
+  if (hasCheck) {
+    r.setX(r.x() + metrics.checkWidth + metrics.checkRightSpace);
+  }
+  if (hasIcon || !hasCheck) {
     r.setX(r.x() + metrics.fontHeight + metrics.iconRightSpace);
   }
   r.setWidth(r.width() - tabWidth);
@@ -2662,16 +2672,35 @@ void PhantomStyle::drawControl(ControlElement element,
       Swatchy fillColor = isSunken ? S_highlight_outline : S_highlight;
       painter->fillRect(option->rect, swatch.color(fillColor));
     }
+    
+    const bool hasIcon = !menuItem->icon.isNull();
 
     if (isCheckable) {
       // Note: check rect might be misaligned vertically if it's a menu from a
       // combo box. Probably a bug in Qt code?
-      QRect checkRect = Ph::menuItemCheckRect(metrics, option->direction,
-                                              itemRect, hasSubMenu);
+      QRect checkRect =
+       Ph::menuItemCheckRect(metrics, option->direction, itemRect, hasSubMenu,
+                             !Ph::MenuItem_ShowCheckOnItemsWithIcons);
       Swatchy signColor = !isEnabled
                               ? S_windowText
                               : isSelected ? S_highlightedText : S_windowText;
-      if (menuItem->checkType & QStyleOptionMenuItem::Exclusive) {
+      if (hasIcon && !Ph::MenuItem_ShowCheckOnItemsWithIcons) {
+        // Rectangle below icon
+        if (isChecked) {
+          QRect iconRect = Ph::menuItemIconRect(metrics, option->direction,
+                                                itemRect, hasSubMenu, false);
+
+          iconRect.adjust(-3, -3, 3, 3);
+          Ph::fillRectOutline(painter, iconRect, 1, swatch.color(S_highlight_outline));
+          
+          Swatchy fillColor = !isEnabled
+                              ? S_highlight
+                              : isSelected ? S_window : S_highlight;
+          
+          iconRect.adjust(1, 1, -1, -1);
+          painter->fillRect(iconRect, swatch.color(fillColor)); 
+        }
+      } else if (menuItem->checkType & QStyleOptionMenuItem::Exclusive) {
         // Radio button
         if (isChecked) {
           painter->setRenderHint(QPainter::Antialiasing);
@@ -2701,13 +2730,13 @@ void PhantomStyle::drawControl(ControlElement element,
       }
     }
 
-    const bool hasIcon = !menuItem->icon.isNull();
-
     if (hasIcon) {
       QRect iconRect = Ph::menuItemIconRect(metrics, option->direction,
-                                            itemRect, hasSubMenu);
+                                            itemRect, hasSubMenu,
+                                            Ph::MenuItem_ShowCheckOnItemsWithIcons);
       QIcon::Mode mode = isEnabled ? QIcon::Normal : QIcon::Disabled;
-      if (isSelected && isEnabled)
+      const bool skipSelected = !Ph::MenuItem_ShowCheckOnItemsWithIcons && isChecked;
+      if (isSelected && isEnabled && !skipSelected)
         mode = QIcon::Selected;
       QIcon::State state = isChecked ? QIcon::On : QIcon::Off;
 
@@ -2738,7 +2767,8 @@ void PhantomStyle::drawControl(ControlElement element,
     if (!s.isEmpty()) {
       QRect textRect =
           Ph::menuItemTextRect(metrics, option->direction, itemRect, hasSubMenu,
-                               hasIcon, menuItem->tabWidth);
+                               hasIcon, Ph::MenuItem_ShowCheckOnItemsWithIcons,
+                               menuItem->tabWidth);
       int t = s.indexOf(QLatin1Char('\t'));
       int text_flags = Qt::AlignLeft | Qt::AlignTop | Qt::TextShowMnemonic |
                        Qt::TextDontClip | Qt::TextSingleLine;
@@ -4303,9 +4333,13 @@ QSize PhantomStyle::sizeFromContents(ContentsType type,
     w += metrics.leftMargin;
     // Phantom treats every menu item with the same space on the left for a
     // check mark, even if it doesn't have the checkable property.
-    w += metrics.checkWidth + metrics.checkRightSpace;
+    if (Ph::MenuItem_ShowCheckOnItemsWithIcons) {
+      w += metrics.checkWidth + metrics.checkRightSpace;
+    } else {
+      w += metrics.checkRightSpace;
+    }
 
-    if (!menuItem->icon.isNull()) {
+    if (!menuItem->icon.isNull() || !Ph::MenuItem_ShowCheckOnItemsWithIcons) {
       // Phantom disregards any user-specified icon sizing at the moment.
       w += metrics.fontHeight;
       w += metrics.iconRightSpace;
