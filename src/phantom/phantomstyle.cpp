@@ -157,6 +157,11 @@ static const bool AllowToolBarAutoRaise = true;
 static const bool ShowItemViewDecorationSelected = false;
 static const bool UseQMenuForComboBoxPopup = true;
 static const bool ItemView_UseFontHeightForDecorationSize = true;
+static const bool BorderSpecularOnPanelButton = true;
+static const bool BorderSpecularOnFrameTab = true;
+static const bool BorderSpecularOnComboBox = true;
+static const bool BorderSpecularOnProgressBar = true;
+static const bool BorderSpecularOnScrollBar = true;
 
 // Whether or not the non-raised tabs in a tab bar have shininess/highlights to
 // them. Setting this to false adds an extra visual hint for distinguishing
@@ -1519,8 +1524,9 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
                       swatch.color(S_window_outline));
     // TODO need to check here if we're drawing with window or button color as
     // the frame fill. Assuming window right now, but could be wrong.
-    Ph::fillRectEdges(painter, Ph::expandRect(option->rect, edge, -1), edge, 1,
-                      swatch.color(S_tabFrame_specular));
+    if (Ph::BorderSpecularOnFrameTab)
+      Ph::fillRectEdges(painter, Ph::expandRect(option->rect, edge, -1), edge,
+                        1, swatch.color(S_tabFrame_specular));
     break;
   }
 #endif // QT_CONFIG(tabbar)
@@ -1688,8 +1694,9 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     QRect r = option->rect;
     Ph::PSave save(painter);
     Ph::paintBorderedRoundRect(painter, r, rounding, swatch, outline, fill);
-    Ph::paintBorderedRoundRect(painter, r.adjusted(1, 1, -1, -1), rounding,
-                               swatch, specular, S_none);
+    if (Ph::BorderSpecularOnPanelButton)
+      Ph::paintBorderedRoundRect(painter, r.adjusted(1, 1, -1, -1), rounding,
+                                 swatch, specular, S_none);
     break;
   }
   case PE_IndicatorDockWidgetResizeHandle: {
@@ -1992,8 +1999,9 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     QRect r = option->rect;
     Ph::PSave save(painter);
     Ph::paintBorderedRoundRect(painter, r, rounding, swatch, outline, fill);
-    Ph::paintBorderedRoundRect(painter, r.adjusted(1, 1, -1, -1), rounding,
-                               swatch, specular, S_none);
+    if (Ph::BorderSpecularOnPanelButton)
+      Ph::paintBorderedRoundRect(painter, r.adjusted(1, 1, -1, -1), rounding,
+                                 swatch, specular, S_none);
     break;
   }
   case PE_FrameTabWidget: {
@@ -2005,7 +2013,9 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
       break;
     Ph::fillRectOutline(painter, option->rect, 1,
                         swatch.color(S_window_outline));
-    Ph::fillRectOutline(painter, bgRect, 1, swatch.color(S_tabFrame_specular));
+    if (Ph::BorderSpecularOnFrameTab)
+      Ph::fillRectOutline(painter, bgRect, 1,
+                          swatch.color(S_tabFrame_specular));
 #endif // QT_CONFIG(tabwidget)
     break;
   }
@@ -2522,9 +2532,10 @@ void PhantomStyle::drawControl(ControlElement element,
       Ph::PSave save(painter);
       Ph::paintBorderedRoundRect(painter, filled, rounding, swatch,
                                  S_progressBar_outline, S_progressBar);
-      Ph::paintBorderedRoundRect(painter, filled.adjusted(1, 1, -1, -1),
-                                 rounding, swatch, S_progressBar_specular,
-                                 S_none);
+      if (Ph::BorderSpecularOnProgressBar)
+        Ph::paintBorderedRoundRect(painter, filled.adjusted(1, 1, -1, -1),
+                                   rounding, swatch, S_progressBar_specular,
+                                   S_none);
       if (isIndeterminate) {
         // TODO paint indeterminate indicator
 #if QT_CONFIG(animation)
@@ -3013,8 +3024,9 @@ void PhantomStyle::drawControl(ControlElement element,
     }
     Ph::paintBorderedRoundRect(painter, drawRect, rounding, swatch,
                                S_window_outline, thisFillColor);
-    Ph::paintBorderedRoundRect(painter, drawRect.adjusted(1, 1, -1, -1),
-                               rounding, swatch, specular, S_none);
+    if (Ph::BorderSpecularOnFrameTab)
+      Ph::paintBorderedRoundRect(painter, drawRect.adjusted(1, 1, -1, -1),
+                                 rounding, swatch, specular, S_none);
     painter->restore();
     if (isSelected) {
       QRect refillRect =
@@ -3023,9 +3035,10 @@ void PhantomStyle::drawControl(ControlElement element,
       refillRect =
           Ph::expandRect(refillRect, edgeAwayNextTab | edgeTowardNextTab, -1);
       painter->fillRect(refillRect, swatch.color(tabFrameColor));
-      Ph::fillRectEdges(painter, refillRect,
-                        edgeAwayNextTab | edgeTowardNextTab, 1,
-                        swatch.color(specular));
+      if (Ph::BorderSpecularOnFrameTab)
+        Ph::fillRectEdges(painter, refillRect,
+                          edgeAwayNextTab | edgeTowardNextTab, 1,
+                          swatch.color(specular));
     }
     break;
   }
@@ -3712,7 +3725,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::fillRectEdges(painter, edgeRect, edges, 1,
                         swatch.color(S_window_outline));
       painter->fillRect(mainRect, swatch.color(thumbFill));
-      if (thumbSpecular) {
+      if (thumbSpecular && Ph::BorderSpecularOnScrollBar) {
         Ph::fillRectOutline(painter, mainRect, 1, swatch.color(thumbSpecular));
       }
     }
@@ -3755,7 +3768,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::fillRectEdges(painter, btnRect, edges, 1,
                         swatch.color(S_window_outline));
       painter->fillRect(bgRect, swatch.color(fill));
-      if (specular) {
+      if (specular && Ph::BorderSpecularOnScrollBar) {
         Ph::fillRectOutline(painter, bgRect, 1, swatch.color(specular));
       }
 
@@ -3798,7 +3811,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::fillRectEdges(painter, btnRect, edges, 1,
                         swatch.color(S_window_outline));
       painter->fillRect(bgRect, swatch.color(fill));
-      if (specular) {
+      if (specular && Ph::BorderSpecularOnScrollBar) {
         Ph::fillRectOutline(painter, bgRect, 1, swatch.color(specular));
       }
 
@@ -3863,7 +3876,8 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
         br.adjust(1, 0, -1, 0);
         Swatchy specular =
             isSunken ? S_button_pressed_specular : S_button_specular;
-        Ph::fillRectOutline(painter, br, 1, swatch.color(specular));
+        if (Ph::BorderSpecularOnComboBox)
+          Ph::fillRectOutline(painter, br, 1, swatch.color(specular));
       }
     } else {
       QStyleOptionButton buttonOption;
@@ -4007,8 +4021,9 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::paintBorderedRoundRect(painter, r, Ph::SliderHandle_Rounding, swatch,
                                  handleOutline, handleFill);
       r.adjust(1, 1, -1, -1);
-      Ph::paintBorderedRoundRect(painter, r, Ph::SliderHandle_Rounding, swatch,
-                                 handleSpecular, S_none);
+      if (Ph::BorderSpecularOnScrollBar)
+        Ph::paintBorderedRoundRect(painter, r, Ph::SliderHandle_Rounding,
+                                   swatch, handleSpecular, S_none);
     }
     break;
   }
