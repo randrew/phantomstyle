@@ -360,7 +360,6 @@ Q_NEVER_INLINE void PhSwatch::loadFromQPalette(const QPalette& pal) {
     colors[S_button] = Dc::adjustLightness(colors[S_button], 0.01);
   colors[S_base] = pal.color(QPalette::Base);
   colors[S_text] = pal.color(QPalette::Text);
-  colors[S_text] = pal.color(QPalette::WindowText);
   colors[S_windowText] = pal.color(QPalette::WindowText);
   colors[S_highlight] = pal.color(QPalette::Highlight);
   colors[S_highlightedText] = pal.color(QPalette::HighlightedText);
