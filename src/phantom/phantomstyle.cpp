@@ -8,6 +8,7 @@
 #include <QtCore/qstring.h>
 #include <QtGui/qfont.h>
 #include <QtGui/qpainter.h>
+#include <QtGui/qpainterpath.h>
 #include <QtGui/qpolygon.h>
 #include <QtGui/qwindow.h>
 #include <QtWidgets/qabstractscrollarea.h>
