@@ -217,6 +217,13 @@ QWidget* coolButtons() {
   auto cb3 = new QComboBox;
   cb3->addItem("Here's quite a bit of text");
   hbox1->addWidget(cb3);
+  auto pb4 = new QPushButton;
+  pb4->setText("Just Text");
+  hbox1->addWidget(pb4);
+  auto pb5 = new QPushButton;
+  pb5->setText("And Icon");
+  pb5->setIcon(w->style()->standardIcon(QStyle::SP_ComputerIcon));
+  hbox1->addWidget(pb5);
 
   auto hbox2 = new QHBoxLayout;
   auto tb0 = new QToolButton;
