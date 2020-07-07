@@ -4463,7 +4463,27 @@ QSize PhantomStyle::sizeFromContents(ContentsType type,
     auto pbopt = qstyleoption_cast<const QStyleOptionButton*>(option);
     if (!pbopt || pbopt->text.isEmpty())
       break;
-    int hpad = (int)((qreal)pbopt->fontMetrics.height() *
+    int fmheight = pbopt->fontMetrics.height();
+    // In high DPI, the measured height of a line of text and the height of the
+    // font as reported by QFontMetrics may differ slightly. This is fine,
+    // except that we want QPushButtons to have the same height as QComboBoxes,
+    // assuming the QPushButton's text isn't multi-line. (QComboBox does not
+    // handle multi-line text.) QPushButton will give us a contents height from
+    // the actual measured text. QComboBox (and others) will use the font
+    // metrics height. Workaround: if there's text and the height is slightly
+    // different, adjust by difference in the font metrics height and measured
+    // text height. We'll try to avoid clobbering non-standard heights caused
+    // by icons or other things.
+    if (!pbopt->text.isEmpty()) {
+      int vdiff = qAbs(fmheight - size.height());
+      // Limit height diff to 2 (scaled) pixels. It's possible that this still
+      // clobbers a non-standard height caused by a special-sized icon or
+      // something, but there's not much we can do about it.
+      if (vdiff != 0 && vdiff <= 2) {
+        newSize.rheight() += fmheight - size.height();
+      }
+    }
+    int hpad = (int)((qreal)fmheight *
                      Phantom::PushButton_HorizontalPaddingFontHeightRatio);
     newSize.rwidth() += hpad * 2;
 #if QT_CONFIG(dialogbuttonbox)
