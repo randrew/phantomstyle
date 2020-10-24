@@ -256,6 +256,10 @@ bool hack_isLightPalette(const QPalette& pal) {
   Hsl hsl1 = Hsl::ofQColor(pal.color(QPalette::Window));
   return hsl0.l < hsl1.l;
 }
+bool hack_isVeryDarkPalette(const QPalette& pal) {
+  Hsl hsl = Hsl::ofQColor(pal.color(QPalette::Base));
+  return hsl.l < 0.1;
+}
 QColor itemViewHeaderOnLineColorOf(const QPalette& pal) {
   return hack_isLightPalette(pal) ? highlightedOutlineOf(pal)
                                   : Grad(pal.color(QPalette::WindowText),
@@ -280,6 +284,7 @@ enum SwatchColor {
   S_window_divider,
   S_window_lighter,
   S_window_darker,
+  S_frame_outline,
   S_button_specular,
   S_button_pressed,
   S_button_pressed_specular,
@@ -371,6 +376,9 @@ Q_NEVER_INLINE void PhSwatch::loadFromQPalette(const QPalette& pal) {
   colors[S_window_divider] = Dc::dividerColor(colors[S_window]);
   colors[S_window_lighter] = Dc::lightShadeOf(colors[S_window]);
   colors[S_window_darker] = Dc::darkShadeOf(colors[S_window]);
+  colors[S_frame_outline] = Dc::hack_isVeryDarkPalette(pal)
+                                ? Dc::adjustLightness(colors[S_base], 0.15)
+                                : colors[S_window_outline];
   colors[S_button_specular] = Dc::specularOf(colors[S_button]);
   colors[S_button_pressed] = Dc::pressedOf(colors[S_button]);
   colors[S_button_pressed_specular] = Dc::specularOf(colors[S_button_pressed]);
@@ -1707,7 +1715,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     bool hasFocus = option->state & State_HasFocus;
     bool isEnabled = option->state & State_Enabled;
     const qreal rounding = Ph::LineEdit_Rounding;
-    auto pen = hasFocus ? S_highlight_outline : S_window_outline;
+    auto pen = hasFocus ? S_highlight_outline : S_frame_outline;
     Ph::PSave save(painter);
     Ph::paintBorderedRoundRect(painter, r, rounding, swatch, pen, S_none);
     save.restore();
@@ -1749,7 +1757,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     bool isEnabled = option->state & State_Enabled;
     bool isPressed = state & State_Sunken;
     Swatchy outlineColor =
-        isHighlighted ? S_highlight_outline : S_window_outline;
+        isHighlighted ? S_highlight_outline : S_frame_outline;
     Swatchy bgFillColor = isPressed ? S_highlight : S_base;
     Swatchy fgColor = isFlat ? S_windowText : S_text;
     if (isPressed && !isFlat) {
@@ -1799,7 +1807,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     bool isSunken = state & State_Sunken;
     bool isEnabled = state & State_Enabled;
     Swatchy outlineColor =
-        isHighlighted ? S_highlight_outline : S_window_outline;
+        isHighlighted ? S_highlight_outline : S_frame_outline;
     Swatchy bgFillColor = isSunken ? S_highlight : S_base;
     QPointF circleCenter(rx + rw / 2.0, ry + rh / 2.0);
     const qreal lineThickness = 1.0;
@@ -3220,10 +3228,10 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       }
       // Left or right border line
       Ph::fillRectEdges(painter, upDownRect, edge, 1,
-                        swatch.color(S_window_outline));
+                        swatch.color(S_frame_outline));
       Ph::PSave save(painter);
       // Outline over entire frame
-      Swatchy outlineColor = hasFocus ? S_highlight_outline : S_window_outline;
+      Swatchy outlineColor = hasFocus ? S_highlight_outline : S_frame_outline;
       Ph::paintBorderedRoundRect(painter, rect, rounding, swatch, outlineColor,
                                  S_none);
       save.restore();
@@ -3857,7 +3865,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
           br.setRight(fr.left() - 1);
         }
         Qt::Edge edge = isLeftToRight ? Qt::LeftEdge : Qt::RightEdge;
-        Swatchy color = hasFocus ? S_highlight_outline : S_window_outline;
+        Swatchy color = hasFocus ? S_highlight_outline : S_frame_outline;
         br.adjust(0, 1, 0, -1);
         Ph::fillRectEdges(painter, br, edge, 1, swatch.color(color));
         br.adjust(1, 0, -1, 0);
