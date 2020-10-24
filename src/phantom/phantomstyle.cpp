@@ -206,11 +206,16 @@ QColor buttonColor(const QPalette& pal) {
 QColor highlightedOutlineOf(const QPalette& pal) {
   return adjustLightness(pal.color(QPalette::Highlight), -0.05);
 }
+bool hack_isVeryDarkCol(const QColor& col) {
+  return Hsl::ofQColor(col).l < 0.2;
+}
 QColor dividerColor(const QColor& underlying) {
-  return adjustLightness(underlying, -0.05);
+  bool isDark = hack_isVeryDarkCol(underlying);
+  return adjustLightness(underlying, isDark ? 0.1 : -0.05);
 }
 QColor outlineOf(const QPalette& pal) {
-  return adjustLightness(pal.color(QPalette::Window), -0.1);
+  bool isDark = hack_isVeryDarkCol(pal.color(QPalette::Window));
+  return adjustLightness(pal.color(QPalette::Window), isDark ? 0.1 : -0.1);
 }
 QColor gutterColorOf(const QPalette& pal) {
   return adjustLightness(pal.color(QPalette::Window), -0.03);
@@ -255,10 +260,6 @@ bool hack_isLightPalette(const QPalette& pal) {
   Hsl hsl0 = Hsl::ofQColor(pal.color(QPalette::WindowText));
   Hsl hsl1 = Hsl::ofQColor(pal.color(QPalette::Window));
   return hsl0.l < hsl1.l;
-}
-bool hack_isVeryDarkPalette(const QPalette& pal) {
-  Hsl hsl = Hsl::ofQColor(pal.color(QPalette::Base));
-  return hsl.l < 0.1;
 }
 QColor itemViewHeaderOnLineColorOf(const QPalette& pal) {
   return hack_isLightPalette(pal) ? highlightedOutlineOf(pal)
@@ -371,14 +372,18 @@ Q_NEVER_INLINE void PhSwatch::loadFromQPalette(const QPalette& pal) {
   colors[S_highlightedText] = pal.color(QPalette::HighlightedText);
   colors[S_scrollbarGutter] = Dc::gutterColorOf(pal);
 
-  colors[S_window_outline] = Dc::adjustLightness(colors[S_window], -0.1);
+  colors[S_window_outline] = Dc::hack_isVeryDarkCol(pal.color(QPalette::Window))
+                                 ? Dc::adjustLightness(colors[S_window], 0.1)
+                                 : Dc::adjustLightness(colors[S_window], -0.1);
   colors[S_window_specular] = Dc::specularOf(colors[S_window]);
   colors[S_window_divider] = Dc::dividerColor(colors[S_window]);
   colors[S_window_lighter] = Dc::lightShadeOf(colors[S_window]);
   colors[S_window_darker] = Dc::darkShadeOf(colors[S_window]);
-  colors[S_frame_outline] = Dc::hack_isVeryDarkPalette(pal)
-                                ? Dc::adjustLightness(colors[S_base], 0.15)
-                                : colors[S_window_outline];
+  colors[S_frame_outline] =
+      (Dc::hack_isVeryDarkCol(pal.color(QPalette::Base)) ||
+       Dc::hack_isVeryDarkCol(pal.color(QPalette::Window)))
+          ? Dc::adjustLightness(colors[S_window_outline], 0.08)
+          : colors[S_window_outline];
   colors[S_button_specular] = Dc::specularOf(colors[S_button]);
   colors[S_button_pressed] = Dc::pressedOf(colors[S_button]);
   colors[S_button_pressed_specular] = Dc::specularOf(colors[S_button_pressed]);
@@ -1983,7 +1988,7 @@ void PhantomStyle::drawPrimitive(PrimitiveElement elem,
     bool hasFocus = (option->state & State_HasFocus &&
                      option->state & State_KeyboardFocusChange);
     const qreal rounding = Ph::PushButton_Rounding;
-    Swatchy outline = S_window_outline;
+    Swatchy outline = S_frame_outline;
     Swatchy fill = S_button;
     Swatchy specular = S_button_specular;
     if (isDown) {
