@@ -4762,7 +4762,7 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
         // Testing against groupBox->features for the frame type doesn't seem
         // to work here.
         if (Ph::GroupBoxLabelOnFrame)
-          r.adjust(1, topMargin, -1, topMargin);
+          r.adjust(1, topMargin, -1, -topMargin);
         else
           r.adjust(1, 1, -1, -1);
       }
