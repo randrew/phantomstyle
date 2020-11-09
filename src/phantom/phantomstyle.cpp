@@ -157,6 +157,7 @@ static const bool AllowToolBarAutoRaise = true;
 static const bool ShowItemViewDecorationSelected = false;
 static const bool UseQMenuForComboBoxPopup = true;
 static const bool ItemView_UseFontHeightForDecorationSize = true;
+static const bool GroupBoxLabelOnFrame = true;
 
 // Whether or not the non-raised tabs in a tab bar have shininess/highlights to
 // them. Setting this to false adds an extra visual hint for distinguishing
@@ -3128,7 +3129,23 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       frame.midLineWidth = groupBox->midLineWidth;
       frame.rect = proxy()->subControlRect(CC_GroupBox, option,
                                            SC_GroupBoxFrame, widget);
+      if (Ph::GroupBoxLabelOnFrame) {
+        painter->save();
+        QRegion region(groupBox->rect);
+        if (!groupBox->text.isEmpty()) {
+          QRect finalRect;
+          if (groupBox->subControls & QStyle::SC_GroupBoxCheckBox) {
+            finalRect = checkBoxRect.united(textRect);
+          } else {
+            finalRect = textRect;
+          }
+          region -= finalRect.adjusted(-2, 0, 2, 0);
+        }
+        painter->setClipRegion(region);
+      }
       proxy()->drawPrimitive(PE_FrameGroupBox, &frame, painter, widget);
+      if (Ph::GroupBoxLabelOnFrame)
+        painter->restore();
     }
 
     // Draw title
@@ -4728,19 +4745,26 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
     case SC_GroupBoxFrame:
     case SC_GroupBoxContents: {
       QRect r = option->rect;
+      int topMargin = 0;
       if (groupBox->subControls & (SC_GroupBoxLabel | SC_GroupBoxCheckBox)) {
         int fontHeight = option->fontMetrics.height();
-        int topMargin =
-            qMax(pixelMetric(PM_ExclusiveIndicatorHeight), fontHeight);
-        topMargin +=
-            (int)((qreal)fontHeight * Ph::GroupBox_LabelBottomMarginFontRatio);
+        topMargin = qMax(pixelMetric(PM_IndicatorHeight), fontHeight);
+        if (Ph::GroupBoxLabelOnFrame) {
+          topMargin /= 2;
+        } else {
+          topMargin += (int)((qreal)fontHeight *
+                             Ph::GroupBox_LabelBottomMarginFontRatio);
+        }
         r.setTop(r.top() + topMargin);
       }
       if (subControl == SC_GroupBoxContents &&
           groupBox->subControls & SC_GroupBoxFrame) {
         // Testing against groupBox->features for the frame type doesn't seem
         // to work here.
-        r.adjust(1, 1, -1, -1);
+        if (Ph::GroupBoxLabelOnFrame)
+          r.adjust(1, topMargin, -1, topMargin);
+        else
+          r.adjust(1, 1, -1, -1);
       }
       return r;
     }
@@ -4757,13 +4781,12 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
           proxy()->pixelMetric(PM_IndicatorWidth, option, widget);
       int indicatorHeight =
           proxy()->pixelMetric(PM_IndicatorHeight, option, widget);
-      int margin = 0;
       int indicatorRightSpace = textHeight / 3;
       int contentWidth = textWidth;
       if (option->subControls & QStyle::SC_GroupBoxCheckBox) {
         contentWidth += indicatorWidth + indicatorRightSpace;
       }
-      int x = margin;
+      int x = Ph::GroupBoxLabelOnFrame ? indicatorHeight / 2 : 0;
       int y = 0;
       switch (groupBox->textAlignment & Qt::AlignHorizontal_Mask) {
       case Qt::AlignHCenter:
