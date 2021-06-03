@@ -4743,7 +4743,7 @@ QRect PhantomStyle::subControlRect(ComplexControl control,
       if (groupBox->subControls & (SC_GroupBoxLabel | SC_GroupBoxCheckBox)) {
         int fontHeight = option->fontMetrics.height();
         int topMargin =
-            qMax(pixelMetric(PM_ExclusiveIndicatorHeight), fontHeight);
+            qMax(pixelMetric(PM_IndicatorHeight), fontHeight);
         topMargin +=
             (int)((qreal)fontHeight * Ph::GroupBox_LabelBottomMarginFontRatio);
         r.setTop(r.top() + topMargin);
