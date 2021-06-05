@@ -3932,7 +3932,7 @@ void PhantomStyle::drawComplexControl(ComplexControl control,
       Ph::PSave saver(painter);
       Swatchy gutterColor =
           option->state & State_Enabled ? S_scrollbarGutter : S_window;
-      Ph::paintBorderedRoundRect(painter, groove, Ph::SliderGroove_Rounding,
+      Ph::paintBorderedRoundRect(painter, g0, Ph::SliderGroove_Rounding,
                                  swatch, outlineColor, gutterColor);
     }
     if (option->subControls & SC_SliderTickmarks) {
